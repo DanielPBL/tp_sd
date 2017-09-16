@@ -1,0 +1,44 @@
+called: g++
+	/home/daniel/Documentos/SD/tp_sd/TP_1
+	g++
+	-Iheader
+	-Wall
+	-Werror
+	-g
+	-ggdb
+	-c
+	-o
+	obj/exec.o
+	src/exec.cpp
+
+called: g++
+	/home/daniel/Documentos/SD/tp_sd/TP_1
+	g++
+	-Iheader
+	-Wall
+	-Werror
+	-g
+	-ggdb
+	-c
+	-o
+	obj/message.o
+	src/message.cpp
+
+called: gcc
+	/home/daniel/Documentos/SD/tp_sd/TP_1
+	gcc
+	-o
+	build/server.out
+	-c
+	src/server.c
+	-lpthread
+
+called: gcc
+	/home/daniel/Documentos/SD/tp_sd/TP_1
+	gcc
+	-o
+	build/client.out
+	-c
+	src/client.c
+	-lpthread
+

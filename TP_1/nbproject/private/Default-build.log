@@ -1,0 +1,6 @@
+g++ -Iheader -Wall -Werror -g -ggdb -c -o obj/exec.o src/exec.cpp
+g++ -Iheader -Wall -Werror -g -ggdb -c -o obj/message.o src/message.cpp
+gcc -o build/server.out -c src/server.c -lpthread
+#g++ -o build/server.out obj/exec.o obj/message.o -lpthread
+gcc -o build/client.out -c src/client.c -lpthread
+#g++ -o build/client.out  -lpthread
