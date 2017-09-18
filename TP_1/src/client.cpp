@@ -14,8 +14,10 @@
 #include <sstream>
 #include <iostream>
 #include <vector>
+#include <time.h>
 
 #define BUF_SIZE 500
+#define TIMEOUT  300
 
 using namespace std;
 
@@ -64,11 +66,10 @@ Client::Client(string cip, string udp, string sip, string port) {
 void Client::listen() {
     pthread_t thread;
     int rc;
-    cout << "Criando thread de listen..." << endl;
+    //cout << "Criando thread de listen..." << endl;
     if ((rc = pthread_create(&thread, NULL, Client::listener, &this->si)) != 0) {
         throw "Erro ao criar broadcaster";
     }
-    //Client::listener((void *)&this->si);
 }
 
 void* Client::listener(void* arg) {
@@ -136,20 +137,32 @@ Message* Client::receive(int sockfd) {
 void Client::query(string cmd) {
     int sockfd;
     struct addrinfo hints, *servinfo, *p;
+    struct timeval timeout;
     struct sockaddr_in sin;
     socklen_t len = sizeof (sin);
     int rv;
-    char s[INET6_ADDRSTRLEN], c[INET6_ADDRSTRLEN];
+    clock_t t;
 
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
 
+    memset(&timeout, 0, sizeof timeout);
+    timeout.tv_sec = TIMEOUT;
+    timeout.tv_usec = 0;
+
+    t = clock();
     if (this->si.sl.empty()) {
         cout << "Aguardando algum servidor..." << endl;
-        while (this->si.sl.empty());
+        while (this->si.sl.empty() && ((clock() - t) / CLOCKS_PER_SEC) < TIMEOUT);
     }
 
+    if (this->si.sl.empty()) {
+        cout << "Tempo limite atingido, tente novamente mais tarde." << endl;
+        return;
+    }
+
+    t = clock();
     for (std::map<string, string>::iterator it = this->si.sl.begin(); it != this->si.sl.end(); ++it) {
         if (!fork()) {
             if ((rv = getaddrinfo(it->first.c_str(), it->second.c_str(), &hints, &servinfo)) != 0) {
@@ -163,6 +176,16 @@ void Client::query(string cmd) {
                     continue;
                 }
 
+                if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (char *) &timeout, sizeof timeout) == -1) {
+                    perror("Erro ao configurar socket");
+                    continue;
+                }
+
+                if (setsockopt(sockfd, SOL_SOCKET, SO_SNDTIMEO, (char *) &timeout, sizeof timeout) == -1) {
+                    perror("Erro ao configurar socket");
+                    continue;
+                }
+
                 if (connect(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
                     close(sockfd);
                     perror("Erro ao conectar ao servidor");
@@ -173,18 +196,14 @@ void Client::query(string cmd) {
             }
 
             if (p == NULL) {
-                cerr << "Erro ao conectar ao servidor" << endl;
+                cerr << "Erro ao conectar ao servidor " << it->first << ":" << it->second << endl;
                 exit(1);
             }
-
 
             if (getsockname(sockfd, (struct sockaddr *) &sin, &len) == -1) {
                 cerr << "Erro ao obter informações do socket" << endl;
                 exit(1);
             }
-
-            inet_ntop(sin.sin_family, (void*) &sin.sin_addr, c, sizeof c);
-            inet_ntop(p->ai_family, get_in_addr((struct sockaddr *) p->ai_addr), s, sizeof s);
 
             freeaddrinfo(servinfo);
 
@@ -210,6 +229,8 @@ void Client::query(string cmd) {
             exit(0);
         }
     }
-    
+
     waitpid(-1, NULL, 0);
+    t = clock() - t;
+    cout << "Tarefa concluída em " << ((float) t) / CLOCKS_PER_SEC << " segundos." << endl;
 }

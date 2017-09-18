@@ -116,7 +116,7 @@ Server::Server(const char* ip, const char* port, const char* bc_port) {
 void Server::broadcast() {
     pthread_t thread;
     int rc;
-    cout << "Criando thread de broadcast..." << endl;
+    //cout << "Criando thread de broadcast..." << endl;
     if ((rc = pthread_create(&thread, NULL, Server::broadcaster, &this->si)) != 0) {
         throw "Erro ao criar broadcaster";
     }
@@ -158,7 +158,7 @@ void Server::saccept() {
     socklen_t sin_size;
     char s[INET6_ADDRSTRLEN];
 
-    cout << "Esperando conexão..." << endl;
+    //cout << "Esperando conexão..." << endl;
 
     sin_size = sizeof their_addr;
     this->connfd = accept(this->sockfd, (struct sockaddr *) &their_addr, &sin_size);
