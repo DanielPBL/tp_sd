@@ -46,23 +46,23 @@ string Message::toString() const {
     return ss.str();
 }
 
-Message::Type Message::getType() {
+Message::Type Message::getType() const {
     return this->type;
 }
 
-std::string Message::getText() {
+std::string Message::getText() const {
     return this->text;
 }
 
-std::string Message::getAddr() {
+std::string Message::getAddr() const {
     return this->addr;
 }
 
-std::string Message::getPort() {
+std::string Message::getPort() const {
     return this->port;
 }
 
-int Message::getSize() {
+int Message::getSize() const {
     return this->size;
 }
 

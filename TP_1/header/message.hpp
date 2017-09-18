@@ -27,11 +27,11 @@ public:
     Message();
     Message(std::string msg);
 
-    Message::Type getType();
-    std::string getText();
-    std::string getAddr();
-    std::string getPort();
-    int getSize();
+    Message::Type getType() const;
+    std::string getText() const;
+    std::string getAddr() const;
+    std::string getPort() const;
+    int getSize() const;
     void setType(Message::Type t);
     void setText(std::string t);
     void setAddr(std::string a);

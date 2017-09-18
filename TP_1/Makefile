@@ -33,10 +33,10 @@ obj/exec.o: header/exec.hpp src/exec.cpp
 obj/message.o: header/message.hpp src/message.cpp
 	$(CXX) $(CXXFLAGS) -c -o $@ src/message.cpp
 
-obj/server.o: header/server.hpp src/server.cpp
+obj/server.o: header/server.hpp src/server.cpp obj/message.o obj/exec.o
 	$(CXX) $(CXXFLAGS) -c -o $@ src/server.cpp
 
-obj/client.o: header/client.hpp src/client.cpp
+obj/client.o: header/client.hpp src/client.cpp obj/message.o
 	$(CXX) $(CXXFLAGS) -c -o $@ src/client.cpp
 
 obj/s_main.o: obj/server.o src/s_main.cpp
