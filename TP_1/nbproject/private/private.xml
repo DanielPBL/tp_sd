@@ -7,4 +7,20 @@
         <activeConfTypeElem>0</activeConfTypeElem>
         <activeConfIndexElem>0</activeConfIndexElem>
     </data>
+    <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
+    <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
+        <group>
+            <file>file:/home/daniel/Documentos/SD/tp_sd/TP_1/header/server.hpp</file>
+            <file>file:/home/daniel/Documentos/SD/tp_sd/TP_1/header/message.hpp</file>
+            <file>file:/home/daniel/Documentos/SD/tp_sd/TP_1/src/broadcaster.c</file>
+            <file>file:/home/daniel/Documentos/SD/tp_sd/TP_1/header/client.hpp</file>
+            <file>file:/home/daniel/Documentos/SD/tp_sd/TP_1/src/s_main.cpp</file>
+            <file>file:/home/daniel/Documentos/SD/tp_sd/TP_1/src/c_main.cpp</file>
+            <file>file:/home/daniel/Documentos/SD/tp_sd/TP_1/Makefile</file>
+            <file>file:/home/daniel/Documentos/SD/tp_sd/TP_1/src/server.cpp</file>
+            <file>file:/home/daniel/Documentos/SD/tp_sd/TP_1/src/server.c</file>
+            <file>file:/home/daniel/Documentos/SD/tp_sd/TP_1/src/message.cpp</file>
+            <file>file:/home/daniel/Documentos/SD/tp_sd/TP_1/src/client.cpp</file>
+        </group>
+    </open-files>
 </project-private>

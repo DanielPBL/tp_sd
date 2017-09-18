@@ -2,16 +2,31 @@
 #define __SERVER_HPP__
 
 #include <arpa/inet.h>
+#include <message.hpp>
+#include <map>
+
+typedef struct SERVERINFO {
+    char ip[INET6_ADDRSTRLEN];
+    int port;
+    int socket;
+    int bc_port;
+    struct sockaddr_in remoteServAddr;
+    std::map<std::string, std::string> sl;
+} ServerInfo;
 
 class Server {
 private:
     int sockfd, connfd;
-    struct addrinfo *servinfo, *p;
-    char ip[INET6_ADDRSTRLEN];
+    static void* broadcaster(void *arg);
 public:
-    Server(const char*);
+    ServerInfo si;
+
+    Server(const char* ip, const char* port, const char* bc_port);
     ~Server();
-    accept();
+    void saccept();
+    Message* receive();
+    void ssend(Message &msg);
+    void broadcast();
 };
 
 void sigchld_handler(int);

@@ -10,8 +10,8 @@ RM=rm
 RMFLAGS=-rf
 
 TARGET=build/server.out build/client.out
-OBJS_S=obj/exec.o obj/message.o obj/server.o
-OBJS_C=
+OBJS_S=obj/exec.o obj/message.o obj/server.o obj/s_main.o
+OBJS_C=obj/message.o obj/client.o obj/c_main.o obj/server.o
 
 all: $(TARGET)
 
@@ -22,12 +22,10 @@ run:	$(TARGET)
 	./build/server.out
 
 build/server.out:	$(OBJS_S)
-		$(CC) -o $@ -c src/server.c $(LDFLAGS)
-		#$(CXX) -o $@ $(OBJS_S) $(LDXXFLAGS)
+		$(CXX) -o $@ $(OBJS_S) $(LDXXFLAGS)
 
 build/client.out:	$(OBJS_C)
-		$(CC) -o $@ -c src/client.c $(LDFLAGS)
-		#$(CXX) -o $@ $(OBJS_C) $(LDXXFLAGS)
+		$(CXX) -o $@ $(OBJS_C) $(LDXXFLAGS)
 
 obj/exec.o: header/exec.hpp src/exec.cpp
 	$(CXX) $(CXXFLAGS) -c -o $@ src/exec.cpp
@@ -40,3 +38,9 @@ obj/server.o: header/server.hpp src/server.cpp
 
 obj/client.o: header/client.hpp src/client.cpp
 	$(CXX) $(CXXFLAGS) -c -o $@ src/client.cpp
+
+obj/s_main.o: obj/server.o src/s_main.cpp
+	$(CXX) $(CXXFLAGS) -c -o $@ src/s_main.cpp
+
+obj/c_main.o: obj/client.o src/c_main.cpp
+	$(CXX) $(CXXFLAGS) -c -o $@ src/c_main.cpp
