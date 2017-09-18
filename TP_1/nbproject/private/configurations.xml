@@ -69,11 +69,11 @@
           <runcommandpicklistitem>"${OUTPUT_PATH}" </runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" 127.0.0.1 5400 localhost 5500</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" localhost 5400 </runcommandpicklistitem>
-          <runcommandpicklistitem>"${OUTPUT_PATH}" 127.0.0.1 5500 localhost 5400</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" 127.0.0.1 5500</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" 127.0.0.1 5500 5400</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" 127.0.0.1 5400 5500</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" 127.0.0.1 5500 localhost 5400 </runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" 127.0.0.1 5500 localhost 5400</runcommandpicklistitem>
         </runcommandpicklist>
         <runcommand>"${OUTPUT_PATH}" 127.0.0.1 5500 localhost 5400</runcommand>
         <rundir>.</rundir>

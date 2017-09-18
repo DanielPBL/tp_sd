@@ -9,6 +9,7 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
+#include <sys/wait.h>
 #include <arpa/inet.h>
 #include <sstream>
 #include <iostream>
@@ -37,7 +38,7 @@ void Client::init(string cip, string udp) {
         perror("Erro ao configurar socket de broadcast");
         throw "Erro setsockopt";
     }
-    
+
     this->ip = string(cip);
     this->si.bc_port = atoi(udp.c_str());
 
@@ -45,10 +46,10 @@ void Client::init(string cip, string udp) {
     servAddr.sin_family = AF_INET;
     servAddr.sin_addr.s_addr = htonl(INADDR_ANY);
     servAddr.sin_port = htons(this->si.bc_port);
-    if ((rc = bind(this->si.socket, (struct sockaddr *) &servAddr, sizeof (servAddr))) == -1 ) {
+    if ((rc = bind(this->si.socket, (struct sockaddr *) &servAddr, sizeof (servAddr))) == -1) {
         throw "Erro ao vincular porta";
     }
-    
+
 }
 
 Client::Client(string cip, string udp) {
@@ -73,7 +74,6 @@ void Client::listen() {
 void* Client::listener(void* arg) {
     ServerInfo *si = (ServerInfo *) arg;
     Message *msg;
-    string str;
     struct sockaddr_in their_addr;
     int numBytes;
     char buf[BUF_SIZE];
@@ -151,56 +151,65 @@ void Client::query(string cmd) {
     }
 
     for (std::map<string, string>::iterator it = this->si.sl.begin(); it != this->si.sl.end(); ++it) {
-        if ((rv = getaddrinfo(it->first.c_str(), it->second.c_str(), &hints, &servinfo)) != 0)
-            throw gai_strerror(rv);
-
-        for (p = servinfo; p != NULL; p = p->ai_next) {
-            if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
-                perror("Erro ao criar socket");
-                continue;
+        if (!fork()) {
+            if ((rv = getaddrinfo(it->first.c_str(), it->second.c_str(), &hints, &servinfo)) != 0) {
+                perror(gai_strerror(rv));
+                exit(1);
             }
 
-            if (connect(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
-                close(sockfd);
-                perror("Erro ao conectar ao servidor");
-                continue;
+            for (p = servinfo; p != NULL; p = p->ai_next) {
+                if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
+                    perror("Erro ao criar socket");
+                    continue;
+                }
+
+                if (connect(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
+                    close(sockfd);
+                    perror("Erro ao conectar ao servidor");
+                    continue;
+                }
+
+                break;
             }
 
-            break;
+            if (p == NULL) {
+                cerr << "Erro ao conectar ao servidor" << endl;
+                exit(1);
+            }
+
+
+            if (getsockname(sockfd, (struct sockaddr *) &sin, &len) == -1) {
+                cerr << "Erro ao obter informações do socket" << endl;
+                exit(1);
+            }
+
+            inet_ntop(sin.sin_family, (void*) &sin.sin_addr, c, sizeof c);
+            inet_ntop(p->ai_family, get_in_addr((struct sockaddr *) p->ai_addr), s, sizeof s);
+
+            freeaddrinfo(servinfo);
+
+            Message msg, *resp;
+            string str;
+
+            msg.setType(Message::QUERY);
+            msg.setAddr(this->ip);
+            msg.setPort(SSTR(ntohs(sin.sin_port)));
+            msg.setText(cmd);
+
+            this->csend(sockfd, msg);
+            resp = this->receive(sockfd);
+            cout << "Servidor - " << resp->getAddr() << ":" << resp->getPort() << endl;
+
+            if (resp->getType() == Message::RESPONSE) {
+                cout << resp->getText() << endl;
+            } else {
+                cout << Message::TypeDesc(resp->getType());
+            }
+
+            delete resp;
+            exit(0);
         }
-
-        if (p == NULL) {
-            cerr << "Erro ao conectar ao servidor" << endl;
-        }
-
-
-        if (getsockname(sockfd, (struct sockaddr *) &sin, &len) == -1) {
-            cerr << "Erro ao obter informações do socket" << endl;
-        }
-
-        inet_ntop(sin.sin_family, (void*) &sin.sin_addr, c, sizeof c);
-        inet_ntop(p->ai_family, get_in_addr((struct sockaddr *) p->ai_addr), s, sizeof s);
-
-        freeaddrinfo(servinfo);
-
-        Message msg, *resp;
-        string str;
-
-        msg.setType(Message::QUERY);
-        msg.setAddr(this->ip);
-        msg.setPort(SSTR(ntohs(sin.sin_port)));
-        msg.setText(cmd);
-
-        this->csend(sockfd, msg);
-        resp = this->receive(sockfd);
-        cout << "Servidor - " << resp->getAddr() << ":" << resp->getPort() << endl;
-
-        if (resp->getType() == Message::RESPONSE) {
-            cout << resp->getText() << endl;
-        } else {
-            cout << Message::TypeDesc(resp->getType());
-        }
-
-        delete resp;
     }
+    
+    waitpid(-1, NULL, 0);
 }

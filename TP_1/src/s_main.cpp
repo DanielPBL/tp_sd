@@ -14,7 +14,7 @@ int main(int argc, char** argv) {
     Message *msg, resp;
 
     if (argc != 4) {
-        cerr << "Utilização: server.out IP TCP_PORT UDP_PORT";
+        cerr << "Utilização: server.out IP TCP_PORT UDP_PORT" << endl;
         exit(EXIT_FAILURE);
     }
 
