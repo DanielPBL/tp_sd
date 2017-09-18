@@ -142,6 +142,9 @@ void Client::query(string cmd) {
     socklen_t len = sizeof (sin);
     int rv;
     clock_t t;
+    int *pids, status;
+    unsigned int i;
+    vector<string> ips;
 
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;
@@ -162,9 +165,21 @@ void Client::query(string cmd) {
         return;
     }
 
+    pids = new int[this->si.sl.size()];
+    ips.resize(this->si.sl.size());
+    i = 0;
+
     t = clock();
     for (std::map<string, string>::iterator it = this->si.sl.begin(); it != this->si.sl.end(); ++it) {
-        if (!fork()) {
+        ips[i] = it->first;
+        pids[i] = fork();
+
+        if (pids[i] == -1) {
+            cerr << "Erro ao criar processo filho" << endl;
+            exit(1);
+        }
+
+        if (pids[i++] == 0) {
             if ((rv = getaddrinfo(it->first.c_str(), it->second.c_str(), &hints, &servinfo)) != 0) {
                 perror(gai_strerror(rv));
                 exit(1);
@@ -230,7 +245,25 @@ void Client::query(string cmd) {
         }
     }
 
-    waitpid(-1, NULL, 0);
+    for (i = 0; i < this->si.sl.size(); ++i) {
+        if (waitpid(pids[i], &status, 0) < 0) {
+            cerr << "Erro ao obter status do processo filho" << endl;
+            exit(1);
+        }
+
+        if (WIFEXITED(status)) {
+            if (WEXITSTATUS(status) != 0) {
+                this->si.sl.erase(this->si.sl.find(ips[i]));
+            }
+        }
+
+        if (WIFSIGNALED(status)) {
+            this->si.sl.erase(this->si.sl.find(ips[i]));
+        }
+    }
+
+    delete pids;
+
     t = clock() - t;
     cout << "Tarefa concluída em " << ((float) t) / CLOCKS_PER_SEC << " segundos." << endl;
 }
