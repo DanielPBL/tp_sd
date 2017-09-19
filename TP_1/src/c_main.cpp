@@ -10,7 +10,7 @@ int main(int argc, char** argv) {
     string cmd;
 
     if (argc != 5 && argc != 3) {
-        cerr << "Utilização IP UDP_PORT (IP_SERVER PORTA_SERVER)" << endl;
+        cerr << "Utilização: client.out IP UDP_PORT (IP_SERVER PORTA_SERVER)" << endl;
         return EXIT_FAILURE;
     }
 
@@ -35,4 +35,3 @@ int main(int argc, char** argv) {
 
     return EXIT_SUCCESS;
 }
-

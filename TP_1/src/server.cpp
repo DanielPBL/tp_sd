@@ -116,7 +116,7 @@ Server::Server(const char* ip, const char* port, const char* bc_port) {
 void Server::broadcast() {
     pthread_t thread;
     int rc;
-    //cout << "Criando thread de broadcast..." << endl;
+    // Cria thread de broadcast
     if ((rc = pthread_create(&thread, NULL, Server::broadcaster, &this->si)) != 0) {
         throw "Erro ao criar broadcaster";
     }
@@ -128,11 +128,13 @@ void* Server::broadcaster(void *arg) {
     string str;
     int numBytes;
 
+    // Cria mensagem de PING
     msg.setType(Message::PING);
-    msg.setAddr(string(si->ip));
-    msg.setPort(SSTR(si->port));
+    msg.setAddr(string(si->ip)); // IP do servidor
+    msg.setPort(SSTR(si->port)); // Porta TCP do servidor
     str = msg.toString();
 
+    // Envia uma mensagem de broadcast a cada 5 segundos
     while (true) {
         numBytes = sendto(si->socket, str.c_str(), str.size(), 0,
                 (struct sockaddr *) &si->remoteServAddr, sizeof si->remoteServAddr);
@@ -148,6 +150,7 @@ void* Server::broadcaster(void *arg) {
     return NULL;
 }
 
+// Fecha sockets caso estejam abertos
 Server::~Server() {
     close(this->sockfd);
     close(this->connfd);
@@ -158,8 +161,7 @@ void Server::saccept() {
     socklen_t sin_size;
     char s[INET6_ADDRSTRLEN];
 
-    //cout << "Esperando conexão..." << endl;
-
+    // Espera um cliente conectar
     sin_size = sizeof their_addr;
     this->connfd = accept(this->sockfd, (struct sockaddr *) &their_addr, &sin_size);
 
@@ -183,6 +185,9 @@ Message* Server::receive() {
     buf[numBytes] = '\0';
     ss << buf;
 
+    /* Obtem informações da mensagem. Caso estaja incompleta, buffet < tamanho
+       continua recebendo até completar a mensagem.
+    */
     Message aux(buf);
     size = aux.getText().size();
     while (aux.getSize() > size) {
@@ -200,6 +205,7 @@ Message* Server::receive() {
 void Server::ssend(Message &msg) {
     string str = msg.toString();
 
+    // Envia uma mensagem pelo socket TCP
     if (send(this->connfd, str.c_str(), str.size(), 0) == -1) {
         throw "Erro ao enviar mensagem";
     }

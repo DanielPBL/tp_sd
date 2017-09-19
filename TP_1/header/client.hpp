@@ -18,10 +18,10 @@ public:
 
     Client(std::string cip, std::string udp);
     Client(std::string cip, std::string udp, std::string sip, std::string port);
+    std::string getIp() const;
     void init(std::string cip, std::string udp);
     void query(std::string cmd);
     void listen();
 };
 
 #endif /* CLIENT_HPP */
-

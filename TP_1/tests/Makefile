@@ -30,7 +30,10 @@ CXXFLAGS += -g -Wall -Wextra -pthread
 
 # All tests produced by this Makefile.  Remember to add new tests you
 # created to the list.
-TESTS = build/tests.out
+TESTS = build/aux_text.out #build/server_text.out build/client_test.out
+
+AUX_OBJS = obj/exec.o obj/exec_test.o \
+		   obj/message.o obj/message_test.o
 
 # All Google Test headers.  Usually you shouldn't change this
 # definition.
@@ -78,5 +81,11 @@ obj/exec.o: $(USER_HEADERS)/exec.hpp $(USER_DIR)/exec.cpp
 obj/exec_test.o: src/exec_test.cpp $(USER_HEADERS)/exec.hpp $(GTEST_HEADERS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c src/exec_test.cpp -o $@
 
-build/tests.out: obj/exec.o obj/exec_test.o obj/gtest_main.a
+obj/message.o: $(USER_HEADERS)/message.hpp $(USER_DIR)/message.cpp
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/message.cpp -o $@
+
+obj/message_test.o: src/message_test.cpp $(USER_HEADERS)/message.hpp $(GTEST_HEADERS)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c src/message_test.cpp -o $@
+
+build/aux.out: $(AUX_OBJS) obj/gtest_main.a
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $^ -o $@

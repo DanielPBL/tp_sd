@@ -25,15 +25,20 @@ int main(int argc, char** argv) {
     while (true) {
         s->saccept();
 
+        // Cria um processo para atender cada requisição
         if (!fork()) {
             msg = s->receive();
 
-            resp.setType(Message::RESPONSE);
-            resp.setAddr(argv[1]);
-            resp.setPort(argv[2]);
-            resp.setText(exec(msg->getText().c_str()));
+            // Se for uma mensagem de consulta, a executa e envia a resposta
+            if (msg->getType() == Message::QUERY) {
+                resp.setType(Message::RESPONSE);
+                resp.setAddr(argv[1]);
+                resp.setPort(argv[2]);
+                resp.setText(exec(msg->getText().c_str()));
 
-            s->ssend(resp);
+                s->ssend(resp);
+            }
+
             delete msg;
             break;
         }
@@ -42,4 +47,3 @@ int main(int argc, char** argv) {
     delete s;
     return EXIT_SUCCESS;
 }
-

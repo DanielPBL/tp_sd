@@ -31,11 +31,9 @@ namespace {
   TEST(ClientTest, SuccessfulQuery) {
     Client c1("127.0.0.1", "5000");
     Message qry("Type: QUERY\nAddr: 127.0.0.1\nPort: 41045\nSize: 9\necho -n \"Olá mundo\"");
-    Message *resp;
 
     c1.listen();
     //Espera ocupada
     while (c1.si.sl.empty());
-    c1.csend(0, qry);
   }
 }  // namespace

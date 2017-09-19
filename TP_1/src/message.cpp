@@ -13,6 +13,7 @@ Message::Message() {
     this->type = Message::ERROR;
 }
 
+// Faz o parse da string como uma mensagem (desserialização)
 Message::Message(string msg) {
     stringstream ss;
     string str;
@@ -25,12 +26,13 @@ Message::Message(string msg) {
     getline(ss, str, '\n');
     this->port = str.substr(6);
     if (this->type != Message::PING) {
-        getline(ss, str); //Tamanho é importante?
+        getline(ss, str);
         this->size = atoi(str.substr(6).c_str());
-        this->text = ss.str().substr(ss.tellg()); //
+        this->text = ss.str().substr(ss.tellg());
     }
 }
 
+// Serializa o objeto Message em uma string
 string Message::toString() const {
     stringstream ss;
 
