@@ -144,4 +144,12 @@ namespace {
 
         delete resp;
     }
+
+    TEST(QueryMsg, ServerFailure) {
+        Client c1("127.0.0.1", "5004", "127.0.0.1", "4004");
+
+        EXPECT_EQ(1, c1.si.sl.size());
+        EXPECT_FALSE(c1.query("whoami"));
+        EXPECT_EQ(0, c1.si.sl.size());
+    }
 }  // namespace

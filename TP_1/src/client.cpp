@@ -315,5 +315,7 @@ bool Client::query(string cmd) {
 
     t = clock() - t;
     cout << "Tarefa concluída em " << ((float) t) / CLOCKS_PER_SEC << " segundos." << endl;
-    return true;
+
+    // Se ainda houver alguém na lista, sinal que pelo menos um respondeu a consulta.
+    return this->si.sl.size() > 0;
 }
