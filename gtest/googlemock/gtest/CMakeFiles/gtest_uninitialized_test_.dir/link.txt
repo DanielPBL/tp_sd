@@ -1,0 +1,1 @@
+/usr/bin/c++      CMakeFiles/gtest_uninitialized_test_.dir/test/gtest_uninitialized_test_.cc.o  -o gtest_uninitialized_test_ -rdynamic libgtest.so -pthread -Wl,-rpath,/home/daniel/Documentos/SD/tp_sd/googletest-master/googlemock/gtest 

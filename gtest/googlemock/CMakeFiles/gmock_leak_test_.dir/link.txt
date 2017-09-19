@@ -1,0 +1,1 @@
+/usr/bin/c++      CMakeFiles/gmock_leak_test_.dir/test/gmock_leak_test_.cc.o  -o gmock_leak_test_ -rdynamic libgmock_main.so -pthread -Wl,-rpath,/home/daniel/Documentos/SD/tp_sd/googletest-master/googlemock 

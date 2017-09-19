@@ -1,0 +1,1 @@
+/usr/bin/c++      CMakeFiles/gtest_unittest.dir/test/gtest_unittest.cc.o  -o gtest_unittest -rdynamic libgtest_main.so libgtest.so -pthread -Wl,-rpath,/home/daniel/Documentos/SD/tp_sd/googletest-master/googlemock/gtest 

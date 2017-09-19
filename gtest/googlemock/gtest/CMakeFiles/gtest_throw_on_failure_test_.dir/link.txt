@@ -1,0 +1,1 @@
+/usr/bin/c++      CMakeFiles/gtest_throw_on_failure_test_.dir/test/gtest_throw_on_failure_test_.cc.o  -o gtest_throw_on_failure_test_ -rdynamic libgtest_no_exception.so -pthread -Wl,-rpath,/home/daniel/Documentos/SD/tp_sd/googletest-master/googlemock/gtest 

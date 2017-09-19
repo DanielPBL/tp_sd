@@ -1,0 +1,1 @@
+/usr/bin/c++      CMakeFiles/gmock_test.dir/test/gmock_test.cc.o  -o gmock_test -rdynamic libgmock_main.so -pthread -Wl,-rpath,/home/daniel/Documentos/SD/tp_sd/googletest-master/googlemock 

@@ -1,0 +1,1 @@
+/usr/bin/c++      CMakeFiles/gmock-nice-strict_test.dir/test/gmock-nice-strict_test.cc.o  -o gmock-nice-strict_test -rdynamic libgmock_main.so -pthread -Wl,-rpath,/home/daniel/Documentos/SD/tp_sd/googletest-master/googlemock 

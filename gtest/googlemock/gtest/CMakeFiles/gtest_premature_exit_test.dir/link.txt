@@ -1,0 +1,1 @@
+/usr/bin/c++      CMakeFiles/gtest_premature_exit_test.dir/test/gtest_premature_exit_test.cc.o  -o gtest_premature_exit_test -rdynamic libgtest.so -pthread -Wl,-rpath,/home/daniel/Documentos/SD/tp_sd/googletest-master/googlemock/gtest 

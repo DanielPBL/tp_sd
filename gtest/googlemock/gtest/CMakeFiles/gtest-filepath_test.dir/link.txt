@@ -1,0 +1,1 @@
+/usr/bin/c++      CMakeFiles/gtest-filepath_test.dir/test/gtest-filepath_test.cc.o  -o gtest-filepath_test -rdynamic libgtest_main.so libgtest.so -pthread -Wl,-rpath,/home/daniel/Documentos/SD/tp_sd/googletest-master/googlemock/gtest 

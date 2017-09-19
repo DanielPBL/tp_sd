@@ -1,0 +1,1 @@
+/usr/bin/c++      CMakeFiles/gtest-death-test_ex_catch_test.dir/test/gtest-death-test_ex_test.cc.o  -o gtest-death-test_ex_catch_test -rdynamic libgtest.so -pthread -Wl,-rpath,/home/daniel/Documentos/SD/tp_sd/googletest-master/googlemock/gtest 

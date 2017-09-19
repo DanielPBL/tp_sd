@@ -1,0 +1,1 @@
+/usr/bin/c++      CMakeFiles/gtest-linked_ptr_test.dir/test/gtest-linked_ptr_test.cc.o  -o gtest-linked_ptr_test -rdynamic libgtest_main.so libgtest.so -pthread -Wl,-rpath,/home/daniel/Documentos/SD/tp_sd/googletest-master/googlemock/gtest 

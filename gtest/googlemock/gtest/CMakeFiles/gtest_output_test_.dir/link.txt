@@ -1,0 +1,1 @@
+/usr/bin/c++      CMakeFiles/gtest_output_test_.dir/test/gtest_output_test_.cc.o  -o gtest_output_test_ -rdynamic libgtest.so -pthread -Wl,-rpath,/home/daniel/Documentos/SD/tp_sd/googletest-master/googlemock/gtest 

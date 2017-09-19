@@ -1,0 +1,1 @@
+/usr/bin/c++      CMakeFiles/sample7_unittest.dir/samples/sample7_unittest.cc.o  -o sample7_unittest -rdynamic libgtest_main.so libgtest.so -pthread -Wl,-rpath,/home/daniel/Documentos/SD/tp_sd/googletest-master/googlemock/gtest 

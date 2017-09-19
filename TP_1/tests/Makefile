@@ -14,11 +14,11 @@
 
 # Points to the root of Google Test, relative to where this file is.
 # Remember to tweak this if you move this file.
-GTEST_DIR = /home/daniel/Documentos/gtest/googletest
+GTEST_DIR = ../../gtest/googletest
 
 # Where to find user code.
-USER_DIR = /home/daniel/Documentos/SD/tp_sd/TP_1/src
-USER_HEADERS = /home/daniel/Documentos/SD/tp_sd/TP_1/header
+USER_DIR = ../src
+USER_HEADERS = ../header
 
 # Flags passed to the preprocessor.
 # Set Google Test's header directory as a system directory, such that
@@ -42,7 +42,7 @@ GTEST_HEADERS = $(GTEST_DIR)/include/gtest/*.h \
 all : $(TESTS)
 
 clean :
-	rm -f $(TESTS) obj/gtest.a obj/gtest_main.a *.o
+	rm -f $(TESTS) obj/gtest.a obj/gtest_main.a obj/*.o
 
 # Builds gtest.a and gtest_main.a.
 
