@@ -30,10 +30,11 @@ CXXFLAGS += -g -Wall -Wextra -pthread
 
 # All tests produced by this Makefile.  Remember to add new tests you
 # created to the list.
-TESTS = build/aux_text.out #build/server_text.out build/client_test.out
+TESTS = build/test.out
 
-AUX_OBJS = obj/exec.o obj/exec_test.o \
-		   obj/message.o obj/message_test.o
+TESTS_OBJS = obj/exec.o obj/exec_test.o \
+		    obj/message.o obj/message_test.o \
+			obj/server.o obj/client.o obj/client_server_test.o
 
 # All Google Test headers.  Usually you shouldn't change this
 # definition.
@@ -45,7 +46,7 @@ GTEST_HEADERS = $(GTEST_DIR)/include/gtest/*.h \
 all : $(TESTS)
 
 clean :
-	rm -f $(TESTS) obj/gtest.a obj/gtest_main.a obj/*.o
+	rm -f $(TESTS) obj/gtest.a obj/gtest_main.a obj/*.o build/*.out
 
 # Builds gtest.a and gtest_main.a.
 
@@ -87,5 +88,15 @@ obj/message.o: $(USER_HEADERS)/message.hpp $(USER_DIR)/message.cpp
 obj/message_test.o: src/message_test.cpp $(USER_HEADERS)/message.hpp $(GTEST_HEADERS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c src/message_test.cpp -o $@
 
-build/aux.out: $(AUX_OBJS) obj/gtest_main.a
+obj/client.o: $(USER_HEADERS)/client.hpp $(USER_DIR)/client.cpp
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/client.cpp -o $@
+
+obj/server.o: $(USER_HEADERS)/server.hpp $(USER_DIR)/server.cpp
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/server.cpp -o $@
+
+obj/client_server_test.o: src/client_server_test.cpp $(USER_HEADERS)/server.hpp \
+						  $(USER_HEADERS)/client.hpp  $(GTEST_HEADERS)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c src/client_server_test.cpp -o $@
+
+build/test.out: $(TESTS_OBJS) obj/gtest_main.a
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $^ -o $@

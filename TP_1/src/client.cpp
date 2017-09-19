@@ -59,10 +59,12 @@ void Client::init(string cip, string udp) {
 }
 
 Client::Client(string cip, string udp) {
+    this->sockfd = -1;
     this->init(cip, udp);
 }
 
 Client::Client(string cip, string udp, string sip, string port) {
+    this->sockfd = -1;
     this->init(cip, udp);
     // Já começa com um servidor no map
     this->si.sl[sip] = port;
@@ -70,6 +72,10 @@ Client::Client(string cip, string udp, string sip, string port) {
 
 string Client::getIp() const {
     return this->ip;
+}
+
+int Client::getSockfd() const {
+    return this->sockfd;
 }
 
 void Client::listen() {
@@ -113,22 +119,22 @@ void* Client::listener(void* arg) {
     return NULL;
 }
 
-void Client::csend(int socket, Message &msg) {
+void Client::csend(Message &msg) {
     string str = msg.toString();
 
     // Envia uma mensagem via socket TCP
-    if (send(socket, str.c_str(), str.size(), 0) == -1) {
+    if (send(this->sockfd, str.c_str(), str.size(), 0) == -1) {
         throw "Erro ao enviar mensagem";
     }
 }
 
-Message* Client::receive(int sockfd) {
+Message* Client::receive() {
     char buf[BUF_SIZE];
     stringstream ss;
     int numBytes, size;
 
     // Recebe uma mensagem via socket TCP
-    if ((numBytes = recv(sockfd, buf, BUF_SIZE - 1, 0)) == -1) {
+    if ((numBytes = recv(this->sockfd, buf, BUF_SIZE - 1, 0)) == -1) {
         throw "Erro ao receber mensagem";
     }
     buf[numBytes] = '\0';
@@ -140,7 +146,7 @@ Message* Client::receive(int sockfd) {
     */
     size = aux.getText().size();
     while (aux.getSize() > size) {
-        if ((numBytes = recv(sockfd, buf, BUF_SIZE - 1, 0)) == -1) {
+        if ((numBytes = recv(this->sockfd, buf, BUF_SIZE - 1, 0)) == -1) {
             throw "Erro ao receber mensagem";
         }
         buf[numBytes] = '\0';
@@ -151,17 +157,11 @@ Message* Client::receive(int sockfd) {
     return new Message(ss.str());
 }
 
-void Client::query(string cmd) {
-    int sockfd;
+void Client::cconnect(string sip, string porta) {
     struct addrinfo hints, *servinfo, *p;
     struct timeval timeout;
-    struct sockaddr_in sin;
     socklen_t len = sizeof (sin);
     int rv;
-    clock_t t;
-    int *pids, status;
-    unsigned int i;
-    vector<string> ips;
 
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;
@@ -171,6 +171,64 @@ void Client::query(string cmd) {
     memset(&timeout, 0, sizeof timeout);
     timeout.tv_sec = TIMEOUT;
     timeout.tv_usec = 0;
+
+    // Obtém informações do servidor
+    if ((rv = getaddrinfo(sip.c_str(), porta.c_str(), &hints, &servinfo)) != 0) {
+        perror(gai_strerror(rv));
+        exit(1);
+    }
+
+    for (p = servinfo; p != NULL; p = p->ai_next) {
+        // Cria socket TCP
+        if ((this->sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
+            perror("Erro ao criar socket");
+            continue;
+        }
+
+        // Seta tempo de TIMEOUT para o recebimento de mensagens
+        if (setsockopt(this->sockfd, SOL_SOCKET, SO_RCVTIMEO, (char *) &timeout, sizeof timeout) == -1) {
+            perror("Erro ao configurar socket");
+            continue;
+        }
+
+        // Seta tempo de TIMEOUT para o envio de mensagens
+        if (setsockopt(this->sockfd, SOL_SOCKET, SO_SNDTIMEO, (char *) &timeout, sizeof timeout) == -1) {
+            perror("Erro ao configurar socket");
+            continue;
+        }
+
+        // Conecta ao servidor
+        if (connect(this->sockfd, p->ai_addr, p->ai_addrlen) == -1) {
+            close(this->sockfd);
+            perror("Erro ao conectar ao servidor");
+            continue;
+        }
+
+        break;
+    }
+
+    // Não conseguiu criar o socket
+    if (p == NULL) {
+        cerr << "Erro ao conectar ao servidor " << sip << ":" << porta << endl;
+        exit(1);
+    }
+
+    // Obtém informações do socket do cliente
+    if (getsockname(this->sockfd, (struct sockaddr *) &(this->sin), &len) == -1) {
+        cerr << "Erro ao obter informações do socket" << endl;
+        exit(1);
+    }
+
+    freeaddrinfo(servinfo);
+}
+
+bool Client::query(string cmd) {
+    clock_t t;
+    int *pids, status;
+    unsigned int i;
+    vector<string> ips;
+    Message msg, *resp;
+    string str;
 
     /* Caso nenhum servidor ainda tenha feito contato, espera no máximo o
        tempo de TIMEOUT até algum servidor ser adicionado
@@ -184,7 +242,7 @@ void Client::query(string cmd) {
     // Ninguém contactou, não tem como fazer a consulta
     if (this->si.sl.empty()) {
         cout << "Tempo limite atingido, tente novamente mais tarde." << endl;
-        return;
+        return false;
     }
 
     pids = new int[this->si.sl.size()];
@@ -204,68 +262,20 @@ void Client::query(string cmd) {
         }
 
         if (pids[i++] == 0) { // Se for o processo filho, envia requisição
-            // Obtém informações do servidor
-            if ((rv = getaddrinfo(it->first.c_str(), it->second.c_str(), &hints, &servinfo)) != 0) {
-                perror(gai_strerror(rv));
-                exit(1);
-            }
-
-            // Cria socket TCP
-            for (p = servinfo; p != NULL; p = p->ai_next) {
-                if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
-                    perror("Erro ao criar socket");
-                    continue;
-                }
-
-                // Seta tempo de TIMEOUT para o recebimento de mensagens
-                if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (char *) &timeout, sizeof timeout) == -1) {
-                    perror("Erro ao configurar socket");
-                    continue;
-                }
-
-                // Seta tempo de TIMEOUT para o envio de mensagens
-                if (setsockopt(sockfd, SOL_SOCKET, SO_SNDTIMEO, (char *) &timeout, sizeof timeout) == -1) {
-                    perror("Erro ao configurar socket");
-                    continue;
-                }
-
-                // Conecta ao servidor
-                if (connect(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
-                    close(sockfd);
-                    perror("Erro ao conectar ao servidor");
-                    continue;
-                }
-
-                break;
-            }
-
-            // Não conseguiu criar o socket
-            if (p == NULL) {
-                cerr << "Erro ao conectar ao servidor " << it->first << ":" << it->second << endl;
-                exit(1);
-            }
-
-            // Obtém informações do socket do cliente
-            if (getsockname(sockfd, (struct sockaddr *) &sin, &len) == -1) {
-                cerr << "Erro ao obter informações do socket" << endl;
-                exit(1);
-            }
-
-            freeaddrinfo(servinfo);
-
-            Message msg, *resp;
-            string str;
+            //Conecta ao servidor
+            this->cconnect(it->first, it->second);
 
             // Cria mensagem de QUERY com o comando
             msg.setType(Message::QUERY);
             msg.setAddr(this->ip);
-            msg.setPort(SSTR(ntohs(sin.sin_port)));
+            msg.setPort(SSTR(ntohs(this->sin.sin_port)));
             msg.setText(cmd);
 
             // Envia a mensagem
-            this->csend(sockfd, msg);
+            this->csend(msg);
+
             // Recebe resposta
-            resp = this->receive(sockfd);
+            resp = this->receive();
 
             // Exibe a resposta do servidor
             cout << "Servidor - " << resp->getAddr() << ":" << resp->getPort() << endl;
@@ -305,4 +315,5 @@ void Client::query(string cmd) {
 
     t = clock() - t;
     cout << "Tarefa concluída em " << ((float) t) / CLOCKS_PER_SEC << " segundos." << endl;
+    return true;
 }

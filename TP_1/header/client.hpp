@@ -5,13 +5,15 @@
 #include <server.hpp>
 #include <map>
 #include <string>
+#include <netinet/in.h>
 
 class Client {
 private:
     std::string ip;
+    int sockfd;
+    struct sockaddr_in sin;
 
-    void csend(int socket, Message &msg);
-    Message* receive(int socket);
+    void init(std::string cip, std::string udp);
     static void* listener(void *arg);
 public:
     ServerInfo si;
@@ -19,8 +21,11 @@ public:
     Client(std::string cip, std::string udp);
     Client(std::string cip, std::string udp, std::string sip, std::string port);
     std::string getIp() const;
-    void init(std::string cip, std::string udp);
-    void query(std::string cmd);
+    int getSockfd() const;
+    void cconnect(std::string sip, std::string porta);
+    void csend(Message &msg);
+    Message* receive();
+    bool query(std::string cmd);
     void listen();
 };
 
