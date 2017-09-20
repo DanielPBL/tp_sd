@@ -82,19 +82,19 @@ namespace {
     }
 
     // Teste dos métodos para o envio de uma query (server-side)
-    // O processo será dividido, o filho fará o papel do cliente
+    // Executa uma thread que fará o papel do cliente
     TEST(QueryMsg, ServerSide) {
         Message *msg, resp;
         pthread_t t;
 
-        // Esse bloco vai rodar em paralelo para simular o cliente
+        // Essa thread vai rodar em paralelo para simular o cliente
         ASSERT_EQ(0, pthread_create(&t, NULL, client_simulator, NULL));
 
         // servidor espera a conexão do cliente e recebe a mensagem
         s.saccept();
         msg = s.receive();
 
-        // Mensagem de QUERY equivalente a superior
+        // Mensagem de QUERY equivalente a da função client_simulator
         EXPECT_EQ(Message::QUERY, msg->getType());
         EXPECT_EQ("127.0.0.1", msg->getAddr());
         EXPECT_EQ("1717", msg->getPort());
@@ -112,12 +112,12 @@ namespace {
     }
 
     // Teste dos métodos para o envio de uma query (client-side)
-    // O processo será dividido, o filho fará o papel do servidor
+    // Executa uma thread que fará o papel do servidor
     TEST(QueryMsg, ClientSide) {
         Message *resp, msg;
         pthread_t t;
 
-        // Esse bloco vai rodar em paralelo para simular o servidor
+        // Essa thread vai rodar em paralelo para simular o servidor
         ASSERT_EQ(0, pthread_create(&t, NULL, server_simulator, NULL));
 
         // Cliente se conecta ao servidor
@@ -135,7 +135,7 @@ namespace {
         c.csend(msg);
         resp = c.receive();
 
-        // Mensagem de RESPONSE equivalente a superior
+        // Mensagem de RESPONSE equivalente a função server_simulator
         EXPECT_EQ(Message::RESPONSE, resp->getType());
         EXPECT_EQ("127.0.0.1", resp->getAddr());
         EXPECT_EQ("4000", resp->getPort());
