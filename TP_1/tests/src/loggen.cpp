@@ -6,6 +6,12 @@
 
 using namespace std;
 
+/*
+  Programa utilizado para geração de logs.
+  Devem ser passados como argumentos, o ID do servidor e o tamanho mínimo do
+  arquivo
+*/
+
 int main(int argc, char const *argv[]) {
     ofstream arq;
     string str;
