@@ -146,6 +146,7 @@ namespace {
         delete resp;
     }
 
+    // Teste de falha no servidor
     TEST(QueryMsg, ServerFailure) {
         Client c1("127.0.0.1", "5004", "127.0.0.1", "4004");
 
