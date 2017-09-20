@@ -19,7 +19,7 @@ namespace {
         resp.setType(Message::QUERY);
         resp.setAddr("127.0.0.1");
         resp.setPort("1717");
-        resp.setText("echo -n \"Olá mundo!\"");
+        resp.setText("grep \"Linha 1:\" maquina.*.log");
         c.csend(resp);
         msg = c.receive();
         delete msg;
@@ -98,8 +98,8 @@ namespace {
         EXPECT_EQ(Message::QUERY, msg->getType());
         EXPECT_EQ("127.0.0.1", msg->getAddr());
         EXPECT_EQ("1717", msg->getPort());
-        EXPECT_EQ(21, msg->getSize());
-        EXPECT_EQ("echo -n \"Olá mundo!\"", msg->getText());
+        EXPECT_EQ(29, msg->getSize());
+        EXPECT_EQ("grep \"Linha 1:\" maquina.*.log", msg->getText());
 
         // Responder a mensagem
         resp.setType(Message::RESPONSE);
@@ -129,7 +129,7 @@ namespace {
         msg.setType(Message::QUERY);
         msg.setAddr("127.0.0.1");
         msg.setPort("1717");
-        msg.setText("echo -n \"Olá mundo!\"");
+        msg.setText("grep \"Linha 1:\" maquina.*.log");
 
         // Envia a mensagem e obtem resposta
         c.csend(msg);
@@ -139,8 +139,9 @@ namespace {
         EXPECT_EQ(Message::RESPONSE, resp->getType());
         EXPECT_EQ("127.0.0.1", resp->getAddr());
         EXPECT_EQ("4000", resp->getPort());
-        EXPECT_EQ(11, resp->getSize());
-        EXPECT_EQ("Olá mundo!", resp->getText());
+        EXPECT_EQ(93, resp->getSize());
+        EXPECT_STRNE(NULL, strstr(resp->getText().c_str(),
+            "Linha 1: Lorem ipsum dolor sit amet, consectetur adipiscing elit."));
 
         delete resp;
     }
@@ -148,6 +149,7 @@ namespace {
     TEST(QueryMsg, ServerFailure) {
         Client c1("127.0.0.1", "5004", "127.0.0.1", "4004");
 
+        // Se o server falha, o cliente deve abandonar esse servidor
         EXPECT_EQ(1, c1.si.sl.size());
         EXPECT_FALSE(c1.query("whoami"));
         EXPECT_EQ(0, c1.si.sl.size());

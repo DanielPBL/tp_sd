@@ -30,7 +30,7 @@ CXXFLAGS += -g -Wall -Wextra -pthread
 
 # All tests produced by this Makefile.  Remember to add new tests you
 # created to the list.
-TESTS = build/test.out
+TESTS = build/test.out build/loggen.out
 
 TESTS_OBJS = obj/exec.o obj/exec_test.o \
 		    obj/message.o obj/message_test.o \
@@ -94,9 +94,15 @@ obj/client.o: $(USER_HEADERS)/client.hpp $(USER_DIR)/client.cpp
 obj/server.o: $(USER_HEADERS)/server.hpp $(USER_DIR)/server.cpp
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/server.cpp -o $@
 
+obj/loggen.o: src/loggen.cpp
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c src/loggen.cpp -o $@
+
 obj/client_server_test.o: src/client_server_test.cpp $(USER_HEADERS)/server.hpp \
 						  $(USER_HEADERS)/client.hpp  $(GTEST_HEADERS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c src/client_server_test.cpp -o $@
 
 build/test.out: $(TESTS_OBJS) obj/gtest_main.a
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $^ -o $@
+
+build/loggen.out: obj/loggen.o
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@
