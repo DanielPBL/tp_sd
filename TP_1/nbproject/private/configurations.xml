@@ -13,16 +13,26 @@
       <df name="obj">
       </df>
       <df name="src">
-        <in>broadcaster.c</in>
         <in>c_main.cpp</in>
         <in>client.c</in>
         <in>client.cpp</in>
         <in>exec.cpp</in>
         <in>message.cpp</in>
-        <in>pthread.c</in>
         <in>s_main.cpp</in>
         <in>server.c</in>
         <in>server.cpp</in>
+      </df>
+      <df name="tests">
+        <df name="build">
+        </df>
+        <df name="obj">
+        </df>
+        <df name="src">
+          <in>client_server_test.cpp</in>
+          <in>exec_test.cpp</in>
+          <in>loggen.cpp</in>
+          <in>message_test.cpp</in>
+        </df>
       </df>
     </df>
   </logicalFolder>
