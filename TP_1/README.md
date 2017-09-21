@@ -47,6 +47,7 @@ client.out IP PORTA_UDP (IP_SERVER PORTA_SERVER)
 ```
 * IP: IP do cliente
 * PORTA_UDP: porta que deve ser escutada para encontrar servidores (descoberta de rede)
+
 Caso queira informar algum servidor inicialmente para o cliente, existem ainda dois
 parâmetros opcionais:
 * IP_SERVER _(Opcional)_: IP do servidor
