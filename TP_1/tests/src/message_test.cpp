@@ -41,4 +41,24 @@ namespace {
         EXPECT_EQ(Message::QUERY, Message::FindType("QUERY"));
         EXPECT_EQ(Message::RESPONSE, Message::FindType("RESPONSE"));
     }
+
+    TEST(MessageTest, Stringfy) {
+        // Teste de serialização
+        Message msg1;
+        msg1.setType(Message::QUERY);
+        msg1.setAddr("127.0.0.1");
+        msg1.setPort("47512");
+        msg1.setText("echo -n \"Olá mundo\"");
+
+        EXPECT_EQ("Type: QUERY\nAddr: 127.0.0.1\nPort: 47512\nSize: 20\necho -n \"Olá mundo\"",
+                    msg1.toString());
+
+        Message msg2;
+        msg2.setType(Message::PING);
+        msg2.setAddr("127.0.0.1");
+        msg2.setPort("47512");
+
+        EXPECT_EQ("Type: PING\nAddr: 127.0.0.1\nPort: 47512\n",
+                    msg2.toString());
+    }
 }  // namespace
