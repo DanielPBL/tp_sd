@@ -20,8 +20,8 @@ forma:
 ```
 loggen.out ID TAMANHO
 ```
-* *ID*: id do servidor
-* *TAMANHO*: tamanho mínimo do arquivo de saída em MB
+* ID: id do servidor
+* TAMANHO: tamanho mínimo do arquivo de saída em MB
 
 Após a execução do programa deverá existir um aquivo nomeado `maquina.ID.log` no
 diretório atual.
@@ -32,11 +32,11 @@ Dentro da pasta `build`, execute o comando:
 ```
 server.out IP PORTA_TCP PORTA_UDP
 ```
-* *IP*: IP do servidor
-* *PORTA_TCP*: porta utilizada para receber conexões dos clientes
-* *PORTA_UDP*: porta para realização do broadcast (descoberta de rede)
+* IP: IP do servidor
+* PORTA_TCP: porta utilizada para receber conexões dos clientes
+* PORTA_UDP: porta para realização do broadcast (descoberta de rede)
 
-*_Observação:_* O arquivo de log gerado para teste deve ser copiado para o diretório
+*Observação:* O arquivo de log gerado para teste deve ser copiado para o diretório
 do servidor.
 
 ### Cliente ###
@@ -45,12 +45,12 @@ Dentra da pasta `build`, execute o comando:
 ```
 client.out IP PORTA_UDP (IP_SERVER PORTA_SERVER)
 ```
-* *IP*: IP do cliente
-* *PORTA_UDP*: porta que deve ser escutada para encontrar servidores (descoberta de rede)
+* IP: IP do cliente
+* PORTA_UDP: porta que deve ser escutada para encontrar servidores (descoberta de rede)
 Caso queira informar algum servidor inicialmente para o cliente, existem ainda dois
 parâmetros opcionais:
-* *IP_SERVER _(Opcional)_*: IP do servidor
-* *PORTA_SERVER _(Opcional)_*: porta que o servidor espera receber conexões
+* IP_SERVER _(Opcional)_: IP do servidor
+* PORTA_SERVER _(Opcional)_: porta que o servidor espera receber conexões
 
 ### Unit Tests ###
 
@@ -59,5 +59,5 @@ os seguintes comandos:
 ```
 test.out
 ```
-*_Observação:_* É necessário que exista um arquivo de log gerado pelo `loggen.out` no
+*Observação:* É necessário que exista um arquivo de log gerado pelo `loggen.out` no
 diretório de execução.
