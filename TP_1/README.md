@@ -56,7 +56,7 @@ parâmetros opcionais:
 ### Unit Tests ###
 
 Para executar os testes unitários basta acessar o diretório `tests/build` e executar
-os seguintes comandos:
+o seguinte comando:
 ```
 test.out
 ```
