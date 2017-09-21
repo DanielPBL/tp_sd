@@ -36,7 +36,7 @@ server.out IP PORTA_TCP PORTA_UDP
 * **PORTA_TCP**: porta utilizada para receber conexões dos clientes
 * **PORTA_UDP**: porta para realização do broadcast (descoberta de rede)
 
-**_Observação:** O arquivo de log gerado para teste deve ser copiado para o diretório
+**_Observação:_** O arquivo de log gerado para teste deve ser copiado para o diretório
 do servidor.
 
 ### Cliente ###
