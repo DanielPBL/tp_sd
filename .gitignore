@@ -35,3 +35,4 @@
 deployment-config.json
 .clang_complete
 *.log
+/TP_2/build/
