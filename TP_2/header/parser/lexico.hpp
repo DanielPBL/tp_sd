@@ -17,6 +17,8 @@
 #define MAIOR                   7
 #define MENOR                   8
 #define VIRGULA                 9
+#define QUIT                    10
+#define HELP                    11
 
 typedef struct LEXEMA {
 	std::string token;
@@ -25,15 +27,15 @@ typedef struct LEXEMA {
 
 class AnalisadorLexico {
 private:
-	std::stringstream comando;
+	std::stringstream *comando;
 	std::map<std::string, int> tabelaSimbolos;
-	int coluna;
 
 public:
-	AnalisadorLexico(const char *comando);
+	AnalisadorLexico();
+	AnalisadorLexico(std::string cmd);
 	~AnalisadorLexico();
 	Lexema getLexema();
-	int getColuna();
+	void setComando(std::string cmd);
 
 private:
 	int consultarTabelaSimbolos(std::string token);

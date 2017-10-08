@@ -6,14 +6,23 @@
 
 using namespace std;
 
-AnalisadorLexico::AnalisadorLexico(const char *comando) {
-	this->comando.str(string(comando));
+AnalisadorLexico::AnalisadorLexico() {
+	this->comando = new stringstream();
 	this->criarTabelaSimbolos();
-	this->coluna = 0;
+}
+
+AnalisadorLexico::AnalisadorLexico(string cmd) {
+	this->comando = new stringstream(cmd + "\n");
+	this->criarTabelaSimbolos();
 }
 
 AnalisadorLexico::~AnalisadorLexico() {
-	//Alguma limpeza...
+	delete this->comando;
+}
+
+void AnalisadorLexico::setComando(string cmd) {
+	delete this->comando;
+	this->comando = new stringstream(cmd + "\n");
 }
 
 bool AnalisadorLexico::isDigit(char c) {
@@ -59,15 +68,12 @@ void AnalisadorLexico::criarTabelaSimbolos() {
 	this->tabelaSimbolos[">"]     = MAIOR;
 	this->tabelaSimbolos["<"]     = MENOR;
 	this->tabelaSimbolos[","]     = VIRGULA;
+	this->tabelaSimbolos["quit"]  = QUIT;
+	this->tabelaSimbolos["help"]  = HELP;
 }
 
 void AnalisadorLexico::ungetChar() {
-	this->comando.unget();
-	this->coluna--;
-}
-
-int AnalisadorLexico::getColuna() {
-	return this->coluna;
+	this->comando->unget();
 }
 
 Lexema AnalisadorLexico::getLexema() {
@@ -80,10 +86,9 @@ Lexema AnalisadorLexico::getLexema() {
 
 	estado = 1;
 	while (estado != 5) {
-		this->comando >> noskipws >> ch;
-		this->coluna++;
+		*(this->comando) >> noskipws >> ch;
 
-		if (this->comando.eof() || this->comando.fail()) {
+		if (this->comando->eof() || this->comando->fail()) {
 			if (estado != 1) {
 				lexema.tipo = FIM_COMANDO_INESPERADO;
 			}

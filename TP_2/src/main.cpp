@@ -1,5 +1,4 @@
-#include <parser/lexico.hpp>
-#include <parser/sintatico.hpp>
+#include <parser/parser.hpp>
 #include <iostream>
 
 #define EXIT_SUCCESS 0
@@ -8,19 +7,23 @@
 using namespace std;
 
 int main(int argc, char **argv) {
-	if (argc < 2) {
+	string cmd;
+	Parser parser;
+
+	/*if (argc < 2) {
 		cout << "Faltam argumentos!" << endl;
 		return EXIT_FAILURE;
-	}
+	}*/
 
-	try {
-		AnalisadorLexico lexico(argv[1]);
-		AnalisadorSintatico sintatico(lexico);
+	while (true) {
+		cout << "> ";
+		getline(cin, cmd);
 
-		sintatico.init();
-	} catch (string msg) {
-		cout << msg << endl;
-		return EXIT_FAILURE;
+		try {
+			parser.parse(cmd);
+		} catch (string msg) {
+			cout << msg << endl;
+		}
 	}
 
 	return EXIT_SUCCESS;
