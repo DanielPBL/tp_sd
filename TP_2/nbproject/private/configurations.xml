@@ -6,15 +6,23 @@
       </df>
       <df name="header">
         <df name="parser">
+          <in>comando.hpp</in>
+          <in>helpcmd.hpp</in>
           <in>lexico.hpp</in>
+          <in>parser.hpp</in>
+          <in>quitcmd.hpp</in>
           <in>sintatico.hpp</in>
         </df>
       </df>
       <df name="obj">
       </df>
       <df name="src">
+        <in>comando.cpp</in>
+        <in>helpcmd.cpp</in>
         <in>lexico.cpp</in>
         <in>main.cpp</in>
+        <in>parser.cpp</in>
+        <in>quitcmd.cpp</in>
         <in>sintatico.cpp</in>
       </df>
       <df name="tests">
@@ -52,6 +60,8 @@
         <gdb_interceptlist>
           <gdbinterceptoptions gdb_all="false" gdb_unhandled="true" gdb_unexpected="true"/>
         </gdb_interceptlist>
+        <gdb_signals>
+        </gdb_signals>
         <gdb_options>
           <DebugOptions>
           </DebugOptions>

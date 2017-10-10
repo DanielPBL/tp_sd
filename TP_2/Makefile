@@ -11,7 +11,8 @@ RMFLAGS=-rf
 
 TARGET=build/main.out
 OBJS_S=
-OBJS_C=obj/lexico.o obj/sintatico.o obj/parser.o obj/main.o
+OBJS_C=obj/lexico.o obj/sintatico.o obj/parser.o obj/main.o \
+	   obj/message.o obj/msgfct.o
 
 INC_CMDS=header/parser/comando.hpp \
 		 header/parser/quitcmd.hpp \
@@ -41,6 +42,12 @@ obj/parser.o: header/parser/sintatico.hpp header/parser/parser.hpp src/parser.cp
 
 obj/comando.o: header/parser/comando.hpp src/comando.cpp
 	$(CXX) $(CXXFLAGS) -c -o $@ src/comando.cpp
+
+obj/message.o: header/message.hpp src/message.cpp
+	$(CXX) $(CXXFLAGS) -c -o $@ src/message.cpp
+
+obj/msgfct.o: header/message.hpp header/msgfct.hpp src/msgfct.cpp
+	$(CXX) $(CXXFLAGS) -c -o $@ src/msgfct.cpp
 
 obj/helpcmd.o: header/parser/comando.hpp header/parser/helpcmd.hpp src/helpcmd.cpp
 	$(CXX) $(CXXFLAGS) -c -o $@ src/helpcmd.cpp

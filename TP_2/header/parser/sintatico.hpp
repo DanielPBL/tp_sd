@@ -21,10 +21,13 @@ private:
 
 	Comando* procPrograma();
 	Comando* procComando();
+	Comando* procServer();
 	Comando* procFind();
 	Comando* procStore();
+	Comando* procList();
 	QuitCmd* procQuit();
 	HelpCmd* procHelp();
+	void procPair();
 	void procChave();
 	void procValor();
 };

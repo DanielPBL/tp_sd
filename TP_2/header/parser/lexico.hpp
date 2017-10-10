@@ -19,6 +19,8 @@
 #define VIRGULA                 9
 #define QUIT                    10
 #define HELP                    11
+#define SERVER                  12
+#define LIST                    13
 
 typedef struct LEXEMA {
 	std::string token;
