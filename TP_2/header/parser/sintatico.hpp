@@ -3,9 +3,11 @@
 
 #include <parser/lexico.hpp>
 #include <parser/comando.hpp>
-#include <parser/quitcmd.hpp>
 #include <parser/helpcmd.hpp>
+#include <parser/findcmd.hpp>
+#include <parser/storecmd.hpp>
 #include <string>
+#include <utility>
 
 class AnalisadorSintatico {
 private:
@@ -14,22 +16,22 @@ private:
 public:
 	AnalisadorSintatico(AnalisadorLexico& lexico);
 	void matchToken(int tipo);
-	void init();
+	Comando* init();
 private:
 	void lancaExcessao(std::string msg);
 	void lancaExcessao();
 
 	Comando* procPrograma();
 	Comando* procComando();
-	Comando* procServer();
-	Comando* procFind();
-	Comando* procStore();
+	Comando* procEnter();
+	FindCmd* procFind();
+	StoreCmd* procStore();
 	Comando* procList();
-	QuitCmd* procQuit();
+	Comando* procQuit();
 	HelpCmd* procHelp();
-	void procPair();
-	void procChave();
-	void procValor();
+	std::pair<int, std::string> procPair();
+	int procChave();
+	std::string procValor();
 };
 
 #endif

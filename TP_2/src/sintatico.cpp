@@ -34,13 +34,9 @@ void AnalisadorSintatico::lancaExcessao() {
 	}
 }
 
-void AnalisadorSintatico::init() {
-	Comando *cmd;
-
+Comando* AnalisadorSintatico::init() {
 	this->atual = lexico.getLexema();
-	cmd = this->procPrograma();
-	cmd->executar();
-	delete cmd;
+	return this->procPrograma();
 }
 
 Comando* AnalisadorSintatico::procPrograma() {
@@ -56,8 +52,8 @@ Comando* AnalisadorSintatico::procComando() {
 	Comando *cmd;
 
 	switch (this->atual.tipo) {
-	case SERVER:
-		cmd = this->procServer();
+	case ENTER:
+		cmd = this->procEnter();
 		break;
 	case FIND:
 		cmd = this->procFind();
@@ -75,49 +71,49 @@ Comando* AnalisadorSintatico::procComando() {
 		cmd = this->procHelp();
 		break;
 	default:
-		cmd = new Comando();
+		cmd = new Comando(Comando::CMD_NULL);
 		this->lancaExcessao();
 	}
 
 	return cmd;
 }
 
-Comando* AnalisadorSintatico::procServer() {
-	this->matchToken(SERVER);
+Comando* AnalisadorSintatico::procEnter() {
+	this->matchToken(ENTER);
 	this->procValor();
 	this->procChave();
 
-	return new Comando();
+	return new Comando(Comando::CMD_ENTER);
 }
 
-Comando* AnalisadorSintatico::procFind() {
+FindCmd* AnalisadorSintatico::procFind() {
 	this->matchToken(FIND);
 	this->matchToken(ABRE_PRNTS);
-	this->procChave();
+	int K = this->procChave();
 	this->matchToken(FECHA_PRNTS);
 
-	return new Comando();
+	return new FindCmd(K);
 }
 
-Comando* AnalisadorSintatico::procStore() {
+StoreCmd* AnalisadorSintatico::procStore() {
 	this->matchToken(STORE);
 	this->matchToken(ABRE_PRNTS);
-	this->procPair();
+	pair<int, string> pair = this->procPair();
 	this->matchToken(FECHA_PRNTS);
 
-	return new Comando();
+	return new StoreCmd(pair);
 }
 
 Comando* AnalisadorSintatico::procList() {
 	this->matchToken(LIST);
 
-	return new Comando();
+	return new Comando(Comando::CMD_LIST);
 }
 
-QuitCmd* AnalisadorSintatico::procQuit() {
+Comando* AnalisadorSintatico::procQuit() {
 	this->matchToken(QUIT);
 
-	return new QuitCmd();
+	return new Comando(Comando::CMD_QUIT);
 }
 
 HelpCmd* AnalisadorSintatico::procHelp() {
@@ -125,30 +121,43 @@ HelpCmd* AnalisadorSintatico::procHelp() {
 
 	return new HelpCmd();
 }
-void AnalisadorSintatico::procPair() {
+
+pair<int, string> AnalisadorSintatico::procPair() {
 	this->matchToken(MENOR);
-	this->procChave();
+	int K = this->procChave();
 	this->matchToken(VIRGULA);
-	this->procValor();
+	string V = this->procValor();
 	this->matchToken(MAIOR);
+
+	return make_pair(K, V);
 }
 
-void AnalisadorSintatico::procChave() {
+int AnalisadorSintatico::procChave() {
+	int ret = -1;
+
 	switch (this->atual.tipo) {
 	case INTEIRO:
+		ret = atoi(this->atual.token.c_str());
 		this->matchToken(INTEIRO);
 		break;
 	default:
 		this->lancaExcessao();
 	}
+
+	return ret;
 }
 
-void AnalisadorSintatico::procValor() {
+string AnalisadorSintatico::procValor() {
+	string ret;
+
 	switch (this->atual.tipo) {
 	case LITERAL:
+		ret = this->atual.token;
 		this->matchToken(LITERAL);
 		break;
 	default:
 		this->lancaExcessao();
 	}
+
+	return ret;
 }

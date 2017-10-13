@@ -3,6 +3,9 @@
 
 using namespace std;
 
+Comando::Comando(Type t) : tipo(t) {
+}
+
 Comando::~Comando() {
     //Destrutor virtual
 }

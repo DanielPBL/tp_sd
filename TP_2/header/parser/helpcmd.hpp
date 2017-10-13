@@ -5,6 +5,7 @@
 
 class HelpCmd : public Comando {
 public:
+    HelpCmd();
     void executar();
 };
 

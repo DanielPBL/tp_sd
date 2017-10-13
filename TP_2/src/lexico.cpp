@@ -70,7 +70,7 @@ void AnalisadorLexico::criarTabelaSimbolos() {
 	this->tabelaSimbolos[","]      = VIRGULA;
 	this->tabelaSimbolos["quit"]   = QUIT;
 	this->tabelaSimbolos["help"]   = HELP;
-	this->tabelaSimbolos["server"] = SERVER;
+	this->tabelaSimbolos["enter"]  = ENTER;
 	this->tabelaSimbolos["list"]   = LIST;
 }
 

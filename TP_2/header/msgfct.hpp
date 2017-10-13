@@ -2,6 +2,7 @@
 #define __MSGFCT_HPP__
 
 #include <message.hpp>
+#include <string>
 
 class MessageFactory {
 private:
@@ -9,7 +10,7 @@ private:
 public:
     MessageFactory();
     Message* newMessage();
-    Message* parseMessage();
+    Message* parseMessage(std::string msg);
 };
 
 #endif

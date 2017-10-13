@@ -1,7 +1,11 @@
 #include <parser/helpcmd.hpp>
+#include <parser/comando.hpp>
 #include <iostream>
 
 using namespace std;
+
+HelpCmd::HelpCmd() : Comando(Comando::CMD_HELP) {
+}
 
 void HelpCmd::executar() {
     cout << "Comandos disponíveis: " << endl;

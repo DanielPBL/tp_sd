@@ -9,25 +9,25 @@ LDXXFLAGS=-lpthread
 RM=rm
 RMFLAGS=-rf
 
-TARGET=build/main.out
-OBJS_S=
-OBJS_C=obj/lexico.o obj/sintatico.o obj/parser.o obj/main.o \
-	   obj/message.o obj/msgfct.o
+TARGET=build/peer.out
+OBJS=obj/lexico.o obj/sintatico.o obj/parser.o obj/main.o \
+	 obj/message.o obj/msgfct.o obj/peer.o
 
 INC_CMDS=header/parser/comando.hpp \
-		 header/parser/quitcmd.hpp \
-		 header/parser/helpcmd.hpp
-OBJS_CMDS=obj/comando.o obj/helpcmd.o obj/quitcmd.o
+		 header/parser/helpcmd.hpp \
+		 header/parser/findcmd.hpp \
+		 header/parser/storecmd.hpp
+OBJS_CMDS=obj/comando.o obj/helpcmd.o obj/findcmd.o obj/storecmd.o
 
 all: $(TARGET)
 
 clean:
-	$(RM) $(RMFLAGS) $(OBJS_S) $(OBJS_C) $(TARGET) $(OBJS_CMDS)
+	$(RM) $(RMFLAGS) $(OBJS) $(TARGET) $(OBJS_CMDS)
 
 run:	$(TARGET)
-	./build/main.out
+	./build/peer.out
 
-build/main.out:	$(OBJS_C) $(OBJS_CMDS)
+build/peer.out:	$(OBJS) $(OBJS_CMDS)
 		$(CXX) -o $@ $^ $(LDXXFLAGS)
 
 obj/lexico.o: header/parser/lexico.hpp src/lexico.cpp
@@ -52,8 +52,14 @@ obj/msgfct.o: header/message.hpp header/msgfct.hpp src/msgfct.cpp
 obj/helpcmd.o: header/parser/comando.hpp header/parser/helpcmd.hpp src/helpcmd.cpp
 	$(CXX) $(CXXFLAGS) -c -o $@ src/helpcmd.cpp
 
-obj/quitcmd.o: header/parser/comando.hpp header/parser/quitcmd.hpp src/quitcmd.cpp
-	$(CXX) $(CXXFLAGS) -c -o $@ src/quitcmd.cpp
+obj/findcmd.o: header/parser/comando.hpp header/parser/findcmd.hpp src/findcmd.cpp
+	$(CXX) $(CXXFLAGS) -c -o $@ src/findcmd.cpp
 
-obj/main.o: header/parser/parser.hpp src/main.cpp
+obj/storecmd.o: header/parser/comando.hpp header/parser/storecmd.hpp src/storecmd.cpp
+	$(CXX) $(CXXFLAGS) -c -o $@ src/storecmd.cpp
+
+obj/peer.o: header/peer.hpp src/peer.cpp
+	$(CXX) $(CXXFLAGS) -c -o $@ src/peer.cpp
+
+obj/main.o: header/peer.hpp src/main.cpp
 	$(CXX) $(CXXFLAGS) -c -o $@ src/main.cpp

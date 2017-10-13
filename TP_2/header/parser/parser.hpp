@@ -13,7 +13,7 @@ private:
 public:
     Parser();
     ~Parser();
-    void parse(std::string cmd);
+    Comando* parse(std::string cmd);
 };
 
 #endif

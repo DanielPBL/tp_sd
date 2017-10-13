@@ -13,7 +13,7 @@ Parser::~Parser() {
     delete this->sintatico;
 }
 
-void Parser::parse(string cmd) {
+Comando* Parser::parse(string cmd) {
     this->lexico->setComando(cmd);
-    this->sintatico->init();
+    return this->sintatico->init();
 }
