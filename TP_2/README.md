@@ -14,7 +14,7 @@ peer (que se encontra na pasta raiz `.`) e dos testes (que se encontra na pasta
 
 Dentro da pasta `build`, execute o comando:
 ```
-peer.out IP IP PORTA
+peer.out IP PORTA
 ```
 * **IP**: IP do peer
 * **PORTA**: porta utilizada para receber conexões
