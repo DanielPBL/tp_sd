@@ -5,8 +5,9 @@
 
 class FindCmd : public Comando {
 public:
-    FindCmd(int k);
     int K;
+
+    FindCmd(int k);
 };
 
 #endif

@@ -6,6 +6,8 @@
 #include <msgfct.hpp>
 #include <string>
 #include <map>
+#include <utility>
+#include <ctime>
 
 class Peer;
 
@@ -20,9 +22,13 @@ typedef struct VIZINHO {
     int sockfd;
 } Vizinho;
 
+typedef struct REQUISICAO {
+    clock_t t;
+    bool done;
+    Message *msg;
+} Requisicao;
+
 class Peer {
-public:
-    int cpid;
 private:
     Parser parser;
     MessageFactory msgFct;
@@ -32,17 +38,21 @@ private:
     int sockfd;
     Vizinho next;
     std::map<int, std::string> tuplas;
+    std::map<int, Requisicao*> reqs;
 public:
     Peer(std::string addr, std::string port);
     ~Peer();
 
     void serve();
+    void pconnect(Vizinho &peer);
+    int pconnect(std::string addr, std::string port);
     void psend(int connfd, Message *msg);
     Message *receive(int connfd);
     void parse(std::string cmd);
-    void respond(int connfd, Message *msg);
+    void processa(int connfd, Message *msg);
 
-    static void* respond(void *con);
+    static void* processa(void *con);
+    static void* serve(void *arg);
 };
 
 #endif

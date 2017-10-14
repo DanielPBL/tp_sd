@@ -7,23 +7,31 @@
       <df name="header">
         <df name="parser">
           <in>comando.hpp</in>
+          <in>findcmd.hpp</in>
           <in>helpcmd.hpp</in>
           <in>lexico.hpp</in>
           <in>parser.hpp</in>
-          <in>quitcmd.hpp</in>
           <in>sintatico.hpp</in>
+          <in>storecmd.hpp</in>
         </df>
+        <in>message.hpp</in>
+        <in>msgfct.hpp</in>
+        <in>peer.hpp</in>
       </df>
       <df name="obj">
       </df>
       <df name="src">
         <in>comando.cpp</in>
+        <in>findcmd.cpp</in>
         <in>helpcmd.cpp</in>
         <in>lexico.cpp</in>
         <in>main.cpp</in>
+        <in>message.cpp</in>
+        <in>msgfct.cpp</in>
         <in>parser.cpp</in>
-        <in>quitcmd.cpp</in>
+        <in>peer.cpp</in>
         <in>sintatico.cpp</in>
+        <in>storecmd.cpp</in>
       </df>
       <df name="tests">
         <df name="build">
@@ -60,8 +68,6 @@
         <gdb_interceptlist>
           <gdbinterceptoptions gdb_all="false" gdb_unhandled="true" gdb_unexpected="true"/>
         </gdb_interceptlist>
-        <gdb_signals>
-        </gdb_signals>
         <gdb_options>
           <DebugOptions>
           </DebugOptions>
@@ -74,8 +80,9 @@
       <runprofile version="9">
         <runcommandpicklist>
           <runcommandpicklistitem>"${OUTPUT_PATH}"</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" localhost 4000</runcommandpicklistitem>
         </runcommandpicklist>
-        <runcommand>"${OUTPUT_PATH}"</runcommand>
+        <runcommand>"${OUTPUT_PATH}" localhost 4000</runcommand>
         <rundir>.</rundir>
         <buildfirst>false</buildfirst>
         <terminal-type>0</terminal-type>

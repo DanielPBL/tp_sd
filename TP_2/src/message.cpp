@@ -11,6 +11,7 @@ Message::Message() {
     this->addr = "";
     this->port = "";
     this->text = "";
+    this->toId = 0;
     this->size = 0;
     this->type = Message::MSG_ERROR;
 }
@@ -34,11 +35,12 @@ Message::Message(string msg) {
 
     switch (this->type) {
         case Message::MSG_RESP:
+        case Message::MSG_ERROR:
             getline(ss, str);
             this->toId = atoi(str.substr(4).c_str());
             break;
         default:
-            //Nada a se fazer
+            this->toId = 0;
             break;
     }
 
@@ -49,14 +51,15 @@ Message::Message(string msg) {
 string Message::toString() const {
     stringstream ss;
 
+    ss << "Id: " << this->id << endl;
     ss << "Type: " << Message::TypeDesc(this->type) << endl;
     ss << "Addr: " << this->addr << endl;
     ss << "Port: " << this->port << endl;
-
-    if (this->type != Message::MSG_PING) {
-        ss << "Size: " << this->size << endl;
-        ss << this->text;
+    ss << "Size: " << this->size << endl;
+    if (this->toId > 0) {
+        ss << "To: " << this->toId << endl;
     }
+    ss << this->text;
 
     return ss.str();
 }
@@ -150,7 +153,7 @@ Message::Type Message::FindType(std::string type) {
         return Message::MSG_STORE;
     } else if (type == "RESPONSE") {
         return Message::MSG_RESP;
-    } if (type == "ENTER") {
+    } else if (type == "ENTER") {
         return Message::MSG_ENTER;
     } else {
         return Message::MSG_ERROR;

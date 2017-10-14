@@ -1,4 +1,5 @@
 #include <parser/sintatico.hpp>
+#include <message.hpp>
 #include <cstdlib>
 #include <cstdio>
 
@@ -78,12 +79,12 @@ Comando* AnalisadorSintatico::procComando() {
 	return cmd;
 }
 
-Comando* AnalisadorSintatico::procEnter() {
+EnterCmd* AnalisadorSintatico::procEnter() {
 	this->matchToken(ENTER);
-	this->procValor();
-	this->procChave();
+	string ip = this->procValor();
+	string porta = SSTR(this->procChave());
 
-	return new Comando(Comando::CMD_ENTER);
+	return new EnterCmd(ip, porta);
 }
 
 FindCmd* AnalisadorSintatico::procFind() {

@@ -8,6 +8,7 @@ using namespace std;
 
 int main(int argc, char **argv) {
 	string cmd;
+	pthread_t t_id;
 
 	if (argc != 3) {
 		cout << "Faltam argumentos!" << endl;
@@ -16,25 +17,20 @@ int main(int argc, char **argv) {
 	}
 
 	Peer p(argv[1], argv[2]);
-	p.cpid = fork();
 
-	if (p.cpid < 0) {
-		perror("Erro ao criar processo filho");
+	if (pthread_create(&t_id, NULL, Peer::serve, &p) != 0) {
+		cerr << "Erro ao criar thread." << endl;
 		return EXIT_FAILURE;
 	}
 
-	if (p.cpid == 0) {
-		p.serve();
-	} else {
-		while (true) {
-			cout << "> ";
-			getline(cin, cmd);
+	while (true) {
+		cout << "> ";
+		getline(cin, cmd);
 
-			try {
-				p.parse(cmd);
-			} catch (string msg) {
-				cout << msg << endl;
-			}
+		try {
+			p.parse(cmd);
+		} catch (string msg) {
+			cout << msg << endl;
 		}
 	}
 

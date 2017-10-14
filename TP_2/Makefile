@@ -16,8 +16,9 @@ OBJS=obj/lexico.o obj/sintatico.o obj/parser.o obj/main.o \
 INC_CMDS=header/parser/comando.hpp \
 		 header/parser/helpcmd.hpp \
 		 header/parser/findcmd.hpp \
-		 header/parser/storecmd.hpp
-OBJS_CMDS=obj/comando.o obj/helpcmd.o obj/findcmd.o obj/storecmd.o
+		 header/parser/storecmd.hpp \
+		 header/parser/entercmd.hpp
+OBJS_CMDS=obj/comando.o obj/helpcmd.o obj/findcmd.o obj/storecmd.o obj/entercmd.o
 
 all: $(TARGET)
 
@@ -57,6 +58,9 @@ obj/findcmd.o: header/parser/comando.hpp header/parser/findcmd.hpp src/findcmd.c
 
 obj/storecmd.o: header/parser/comando.hpp header/parser/storecmd.hpp src/storecmd.cpp
 	$(CXX) $(CXXFLAGS) -c -o $@ src/storecmd.cpp
+
+obj/entercmd.o: header/parser/comando.hpp header/parser/entercmd.hpp src/entercmd.cpp
+	$(CXX) $(CXXFLAGS) -c -o $@ src/entercmd.cpp
 
 obj/peer.o: header/peer.hpp src/peer.cpp
 	$(CXX) $(CXXFLAGS) -c -o $@ src/peer.cpp

@@ -6,6 +6,7 @@
 #include <parser/helpcmd.hpp>
 #include <parser/findcmd.hpp>
 #include <parser/storecmd.hpp>
+#include <parser/entercmd.hpp>
 #include <string>
 #include <utility>
 
@@ -23,7 +24,7 @@ private:
 
 	Comando* procPrograma();
 	Comando* procComando();
-	Comando* procEnter();
+	EnterCmd* procEnter();
 	FindCmd* procFind();
 	StoreCmd* procStore();
 	Comando* procList();
