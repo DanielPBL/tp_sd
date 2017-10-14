@@ -409,8 +409,18 @@ void Peer::parse(string cmd) {
             break;
         case Comando::CMD_STORE: {
             StoreCmd *store = (StoreCmd*) comando;
+            Message *msg = this->msgFct.newMessage();
 
             this->tuplas.insert(store->tupla);
+            // Redundância
+            msg->setAddr(this->ip);
+            msg->setPort(this->porta);
+            msg->setType(Message::MSG_STORE);
+            msg->setText("STORE(<" + SSTR(store->tupla.first) + ",\"" + store->tupla.second + "\">)\n");
+
+            this->pconnect(this->next);
+            this->psend(this->next.sockfd, msg);
+            close(this->next.sockfd);
         }
             break;
         case Comando::CMD_QUIT:
