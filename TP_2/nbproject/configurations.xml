@@ -3,9 +3,18 @@
   <logicalFolder name="root" displayName="root" projectFiles="true" kind="ROOT">
     <df root="." name="0">
       <df name="src">
+        <in>comando.cpp</in>
+        <in>entercmd.cpp</in>
+        <in>findcmd.cpp</in>
+        <in>helpcmd.cpp</in>
         <in>lexico.cpp</in>
         <in>main.cpp</in>
+        <in>message.cpp</in>
+        <in>msgfct.cpp</in>
+        <in>parser.cpp</in>
+        <in>peer.cpp</in>
         <in>sintatico.cpp</in>
+        <in>storecmd.cpp</in>
       </df>
     </df>
     <logicalFolder name="ExternalFiles"
@@ -48,11 +57,29 @@
           <preBuildCommand></preBuildCommand>
         </preBuild>
       </makefileType>
+      <item path="src/comando.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/entercmd.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/findcmd.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/helpcmd.cpp" ex="false" tool="1" flavor2="0">
+      </item>
       <item path="src/lexico.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="src/main.cpp" ex="false" tool="1" flavor2="0">
       </item>
+      <item path="src/message.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/msgfct.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/parser.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/peer.cpp" ex="false" tool="1" flavor2="0">
+      </item>
       <item path="src/sintatico.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/storecmd.cpp" ex="false" tool="1" flavor2="0">
       </item>
     </conf>
   </confs>

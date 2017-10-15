@@ -4,6 +4,6 @@
 
 using namespace std;
 
-StoreCmd::StoreCmd(std::pair<int, std::string> pair) : Comando(Comando::CMD_STORE) {
+StoreCmd::StoreCmd(std::pair<unsigned int, std::string> pair) : Comando(Comando::CMD_STORE) {
     this->tupla = pair;
 }

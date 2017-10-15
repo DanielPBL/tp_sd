@@ -38,8 +38,8 @@ private:
     std::string porta;
     int sockfd;
     Vizinho next, prev;
-    std::map<int, std::string> tuplas;
-    std::map<int, Requisicao*> reqs;
+    std::map<unsigned int, std::string> tuplas;
+    std::map<unsigned int, Requisicao*> reqs;
 public:
     Peer(std::string addr, std::string port);
     ~Peer();

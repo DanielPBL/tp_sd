@@ -7,9 +7,9 @@
 
 class StoreCmd : public Comando {
 public:
-    std::pair<int, std::string> tupla;
-    
-    StoreCmd(std::pair<int, std::string> pair);
+    std::pair<unsigned int, std::string> tupla;
+
+    StoreCmd(std::pair<unsigned int, std::string> pair);
 };
 
 #endif

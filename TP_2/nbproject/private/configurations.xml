@@ -70,6 +70,8 @@
         <gdb_interceptlist>
           <gdbinterceptoptions gdb_all="false" gdb_unhandled="true" gdb_unexpected="true"/>
         </gdb_interceptlist>
+        <gdb_signals>
+        </gdb_signals>
         <gdb_options>
           <DebugOptions>
           </DebugOptions>
@@ -83,8 +85,10 @@
         <runcommandpicklist>
           <runcommandpicklistitem>"${OUTPUT_PATH}"</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" localhost 4000</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" localhost 5000</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" localhost 6000</runcommandpicklistitem>
         </runcommandpicklist>
-        <runcommand>"${OUTPUT_PATH}" localhost 4000</runcommand>
+        <runcommand>"${OUTPUT_PATH}" localhost 6000</runcommand>
         <rundir>.</rundir>
         <buildfirst>false</buildfirst>
         <terminal-type>0</terminal-type>
