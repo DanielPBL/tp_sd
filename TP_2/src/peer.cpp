@@ -19,19 +19,37 @@
 #define BUF_SIZE 500
 #define BACKLOG 10
 #define TIMEOUT 300
+#define MAXNODES 256
 
 using namespace std;
 
+unsigned long Peer::hash(const std::string &s) {
+    unsigned long h = 0;
+    char *str = (char*) s.c_str();
+
+    while (*str) {
+        h = h << 1 ^ *str++;
+    }
+
+    return (h % MAXNODES) + 1;
+}
+
 Peer::Peer(std::string addr, std::string port) {
     struct addrinfo hints, *servinfo, *p;
-    int yes=1;
+    int yes = 1;
     int rv;
 
+    this->id = Peer::hash(addr + ":" + port);
     this->ip = addr;
     this->porta = port;
 
+    this->next.id = this->id;
     this->next.ip = addr;
     this->next.porta = port;
+
+    this->prev.id = this->id;
+    this->prev.ip = addr;
+    this->prev.porta = port;
 
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;
@@ -44,19 +62,19 @@ Peer::Peer(std::string addr, std::string port) {
     }
 
     for(p = servinfo; p != NULL; p = p->ai_next) {
-        if ((sockfd = socket(p->ai_family, p->ai_socktype,
+        if ((this->sockfd = socket(p->ai_family, p->ai_socktype,
                 p->ai_protocol)) == -1) {
             perror("server: socket");
             continue;
         }
 
-        if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes,
+        if (setsockopt(this->sockfd, SOL_SOCKET, SO_REUSEADDR, &yes,
                 sizeof(int)) == -1) {
             perror("setsockopt");
             exit(1);
         }
 
-        if (bind(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
+        if (bind(this->sockfd, p->ai_addr, p->ai_addrlen) == -1) {
             close(sockfd);
             perror("server: bind");
             continue;
@@ -72,7 +90,7 @@ Peer::Peer(std::string addr, std::string port) {
         exit(1);
     }
 
-    if (listen(sockfd, BACKLOG) == -1) {
+    if (listen(this->sockfd, BACKLOG) == -1) {
         perror("listen");
         exit(1);
     }
@@ -188,24 +206,54 @@ Message* Peer::receive(int connfd) {
 void Peer::processa(int connfd, Message *msg) {
     switch (msg->getType()) {
         case Message::MSG_ENTER: {
-            Message *resp = this->msgFct.newMessage();
+            Message *resp;
+            bool zero_entre = (this->next.id < this->id);
             Vizinho peer = {
                 .ip = msg->getAddr(),
                 .porta = msg->getPort(),
-                .sockfd = this->pconnect(msg->getAddr(), msg->getPort())
+                .sockfd = 0,
+                .id = Peer::hash(msg->getAddr() + ":" + msg->getPort())
             };
 
-            // Responde com o Peer para o qual apontava
-            resp->setAddr(this->ip);
-            resp->setPort(this->porta);
-            resp->setType(Message::MSG_RESP);
-            resp->setToId(msg->getId());
-            resp->setText("Addr: " + this->next.ip + "\n"
-                        + "Port: " + this->next.porta);
+            if (this->id == this->next.id) {
+                // Rede vazia
+                this->next.id = peer.id;
+                this->next.ip = peer.ip;
+                this->next.porta = peer.porta;
 
-            // Passa a apontar para o peer que fez a requisição
-            this->next.ip = msg->getAddr();
-            this->next.porta = msg->getPort();
+                resp = this->msgFct.newMessage();
+                resp->setAddr(this->ip);
+                resp->setPort(this->porta);
+                resp->setType(Message::MSG_RESP);
+                resp->setToId(msg->getId());
+                resp->setText("Addr: " + this->ip + "\n"
+                            + "Port: " + this->porta + "\n"
+                            + "Addr: " + this->ip + "\n"
+                            + "Port: " + this->porta);
+                this->pconnect(peer);
+            } else if (((peer.id > this->id) || (zero_entre && this->id > peer.id))
+                    && peer.id < this->next.id) {
+                // Inserir entre
+                resp = this->msgFct.newMessage();
+                resp->setAddr(this->ip);
+                resp->setPort(this->porta);
+                resp->setType(Message::MSG_RESP);
+                resp->setToId(msg->getId());
+                resp->setText("Addr: " + this->next.ip + "\n"
+                            + "Port: " + this->next.porta + "\n"
+                            + "Addr: " + this->ip + "\n"
+                            + "Port: " + this->porta);
+                this->pconnect(peer);
+
+                this->next.id = peer.id;
+                this->next.ip = peer.ip;
+                this->next.porta = peer.porta;
+            } else {
+                // Passa a requisição pro próximo
+                peer = this->next;
+                this->pconnect(peer);
+                resp = msg;
+            }
 
             this->psend(peer.sockfd, resp);
             close(peer.sockfd);
@@ -213,10 +261,12 @@ void Peer::processa(int connfd, Message *msg) {
             break;
         case Message::MSG_FIND: {
             FindCmd *find = (FindCmd*) this->parser.parse(msg->getText());
+            bool zero_entre = (this->next.id < this->id);
             Message *resp;
             Vizinho peer = {
                 .ip = msg->getAddr(),
-                .porta = msg->getPort()
+                .porta = msg->getPort(),
+                .sockfd = zero_entre //DEBUG WARNING
             };
             // Procura tupla em sua coleção, caso encontre, respode com a tupla,
             // caso contrário repassa a requisição
@@ -269,7 +319,23 @@ void Peer::processa(int connfd, Message *msg) {
                         getline(ss, str, '\n');
                         this->next.porta = str.substr(6);
 
+                        getline(ss, str, '\n');
+                        this->prev.ip = str.substr(6);
+                        getline(ss, str, '\n');
+                        this->prev.porta = str.substr(6);
+
+                        this->next.id = Peer::hash(this->next.ip + ":" + this->next.porta);
+                        this->prev.id = Peer::hash(this->prev.ip + ":" + this->prev.porta);
+
                         this->reqs[msg->getToId()]->done = true;
+
+                        Message *ack = this->msgFct.newMessage();
+                        ack->setType(Message::MSG_ACK);
+                        ack->setAddr(this->ip);
+                        ack->setPort(this->porta);
+                        this->pconnect(this->next);
+                        this->psend(this->next.sockfd, ack);
+                        close(this->next.sockfd);
                     }
                         break;
                     case Message::MSG_FIND: {
@@ -297,7 +363,17 @@ void Peer::processa(int connfd, Message *msg) {
                         this->reqs[msg->getToId()]->done = true;
                     }
                 }
+        case Message::MSG_ACK:
+            this->prev.ip = msg->getAddr();
+            this->prev.porta = msg->getPort();
+            this->prev.id = Peer::hash(this->prev.ip + ":" + this->prev.porta);
+
+            // Enviar para o peer as tuplas que pertencem ao seu intervalo de id
+
+            break;
         default:
+            cout << "Mensagem sem tratamento" << endl;
+            cout << msg->toString() << endl;
             break;
     }
 }
@@ -401,7 +477,9 @@ void Peer::parse(string cmd) {
         }
             break;
         case Comando::CMD_LIST:
-            cout << "Vizinho - " << this->next.ip << ":" << this->next.porta << endl;
+            cout << "Vizinhos: " << endl;
+            cout << "Próximo: " << this->next.ip << ":" << this->next.porta  << "#" << this->next.id << endl;
+            cout << "Anterior: " << this->prev.ip << ":" << this->prev.porta  << "#" << this->prev.id << endl;
             cout << "Tuplas Armazenadas:" << endl;
             for (map<int, string>::iterator it = this->tuplas.begin(); it != this->tuplas.end(); ++it) {
                 cout << "<" << it->first << ", \"" << it->second << "\">" << endl;

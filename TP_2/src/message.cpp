@@ -137,6 +137,8 @@ string Message::TypeDesc(Message::Type type) {
             return "RESPONSE";
         case Message::MSG_ENTER:
             return "ENTER";
+        case Message::MSG_ACK:
+            return "ACK";
     }
 
     return "ERROR";
@@ -155,6 +157,8 @@ Message::Type Message::FindType(std::string type) {
         return Message::MSG_RESP;
     } else if (type == "ENTER") {
         return Message::MSG_ENTER;
+    } else if (type == "ACK") {
+        return Message::MSG_ACK;
     } else {
         return Message::MSG_ERROR;
     }

@@ -19,7 +19,8 @@ public:
         MSG_FIND,
         MSG_STORE,
         MSG_RESP,
-        MSG_ENTER
+        MSG_ENTER,
+        MSG_ACK
     };
 private:
     unsigned int id;

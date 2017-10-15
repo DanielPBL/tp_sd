@@ -7,6 +7,7 @@
       <df name="header">
         <df name="parser">
           <in>comando.hpp</in>
+          <in>entercmd.hpp</in>
           <in>findcmd.hpp</in>
           <in>helpcmd.hpp</in>
           <in>lexico.hpp</in>
@@ -22,6 +23,7 @@
       </df>
       <df name="src">
         <in>comando.cpp</in>
+        <in>entercmd.cpp</in>
         <in>findcmd.cpp</in>
         <in>helpcmd.cpp</in>
         <in>lexico.cpp</in>

@@ -20,6 +20,7 @@ typedef struct VIZINHO {
     std::string ip;
     std::string porta;
     int sockfd;
+    unsigned long id;
 } Vizinho;
 
 typedef struct REQUISICAO {
@@ -32,11 +33,11 @@ class Peer {
 private:
     Parser parser;
     MessageFactory msgFct;
+    unsigned long id;
     std::string ip;
     std::string porta;
-
     int sockfd;
-    Vizinho next;
+    Vizinho next, prev;
     std::map<int, std::string> tuplas;
     std::map<int, Requisicao*> reqs;
 public:
@@ -51,6 +52,7 @@ public:
     void parse(std::string cmd);
     void processa(int connfd, Message *msg);
 
+    static unsigned long hash(const std::string &s);
     static void* processa(void *con);
     static void* serve(void *arg);
 };
