@@ -266,8 +266,9 @@ void Peer::processa(int connfd, Message *msg) {
                             + "Addr: " + this->ip + "\n"
                             + "Port: " + this->porta);
                 this->pconnect(peer);
-            } else if (((peer.id > this->id) || (zero_entre && this->id > peer.id))
-                    && peer.id < this->next.id) { // Inseir o novo peer entre o peer atual e o próximo
+            } else if ((peer.id > this->id && peer.id < this->next.id)
+                    || (zero_entre && ((peer.id > this->id && peer.id > this->next.id)
+                    || (peer.id < this->id && peer.id < this->next.id)))) { // Inseir o novo peer entre o peer atual e o próximo
                 // Monta uma mensagem informando ao novo peer que seu próximo é o próximo do
                 // peer atual e seu anterior é o peer atual
                 resp = this->msgFct.newMessage();

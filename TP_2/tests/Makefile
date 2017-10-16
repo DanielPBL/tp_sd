@@ -20,21 +20,28 @@ GTEST_DIR = ../../gtest/googletest
 USER_DIR = ../src
 USER_HEADERS = ../header
 
+INC_CMDS=$(USER_HEADERS)/parser/comando.hpp \
+	$(USER_HEADERS)/parser/helpcmd.hpp \
+	$(USER_HEADERS)/parser/findcmd.hpp \
+	$(USER_HEADERS)/parser/storecmd.hpp \
+	$(USER_HEADERS)/parser/entercmd.hpp
+OBJS_PARSER=obj/lexico.o obj/sintatico.o \
+			obj/comando.o obj/helpcmd.o obj/findcmd.o obj/storecmd.o obj/entercmd.o
+
 # Flags passed to the preprocessor.
 # Set Google Test's header directory as a system directory, such that
 # the compiler doesn't generate warnings in Google Test headers.
 CPPFLAGS += -isystem $(GTEST_DIR)/include -I$(USER_HEADERS)
 
 # Flags passed to the C++ compiler.
-CXXFLAGS += -g -Wall -Wextra -pthread
+CXXFLAGS += -g -Wall -Wextra -pthread -I$(USER_HEADERS)
 
 # All tests produced by this Makefile.  Remember to add new tests you
 # created to the list.
-TESTS = build/test.out build/loggen.out
+TESTS = build/test.out
 
-TESTS_OBJS = obj/exec.o obj/exec_test.o \
-		    obj/message.o obj/message_test.o \
-			obj/server.o obj/client.o obj/client_server_test.o
+TESTS_OBJS = obj/message.o obj/msgfct.o obj/message_test.o \
+			 obj/parser.o obj/parser_test.o
 
 # All Google Test headers.  Usually you shouldn't change this
 # definition.
@@ -76,33 +83,44 @@ obj/gtest_main.a : obj/gtest-all.o obj/gtest_main.o
 # gtest_main.a, depending on whether it defines its own main()
 # function.
 
-obj/exec.o: $(USER_HEADERS)/exec.hpp $(USER_DIR)/exec.cpp
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/exec.cpp -o $@
-
-obj/exec_test.o: src/exec_test.cpp $(USER_HEADERS)/exec.hpp $(GTEST_HEADERS)
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c src/exec_test.cpp -o $@
-
 obj/message.o: $(USER_HEADERS)/message.hpp $(USER_DIR)/message.cpp
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/message.cpp -o $@
 
-obj/message_test.o: src/message_test.cpp $(USER_HEADERS)/message.hpp $(GTEST_HEADERS)
+obj/msgfct.o: $(USER_HEADERS)/message.hpp $(USER_HEADERS)/msgfct.hpp $(USER_DIR)/msgfct.cpp
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/msgfct.cpp -o $@
+
+obj/message_test.o: src/message_test.cpp $(USER_HEADERS)/message.hpp \
+	 				$(USER_HEADERS)/msgfct.hpp $(GTEST_HEADERS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c src/message_test.cpp -o $@
 
-obj/client.o: $(USER_HEADERS)/client.hpp $(USER_DIR)/client.cpp
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/client.cpp -o $@
+obj/lexico.o: $(USER_HEADERS)/parser/lexico.hpp $(USER_DIR)/lexico.cpp
+	$(CXX) $(CXXFLAGS) -c -o $@ $(USER_DIR)/lexico.cpp
 
-obj/server.o: $(USER_HEADERS)/server.hpp $(USER_DIR)/server.cpp
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/server.cpp -o $@
+obj/sintatico.o: $(USER_HEADERS)/parser/lexico.hpp $(INC_CMDS)\
+	$(USER_HEADERS)/parser/sintatico.hpp $(USER_DIR)/sintatico.cpp
+		$(CXX) $(CXXFLAGS) -c -o $@ $(USER_DIR)/sintatico.cpp
 
-obj/loggen.o: src/loggen.cpp
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c src/loggen.cpp -o $@
+obj/comando.o: $(USER_HEADERS)/parser/comando.hpp $(USER_DIR)/comando.cpp
+	$(CXX) $(CXXFLAGS) -c -o $@ $(USER_DIR)/comando.cpp
 
-obj/client_server_test.o: src/client_server_test.cpp $(USER_HEADERS)/server.hpp \
-						  $(USER_HEADERS)/client.hpp  $(GTEST_HEADERS)
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c src/client_server_test.cpp -o $@
+obj/helpcmd.o: $(USER_HEADERS)/parser/comando.hpp $(USER_HEADERS)/parser/helpcmd.hpp $(USER_DIR)/helpcmd.cpp
+	$(CXX) $(CXXFLAGS) -c -o $@ $(USER_DIR)/helpcmd.cpp
 
-build/test.out: $(TESTS_OBJS) obj/gtest_main.a
+obj/findcmd.o: $(USER_HEADERS)/parser/comando.hpp $(USER_HEADERS)/parser/findcmd.hpp $(USER_DIR)/findcmd.cpp
+	$(CXX) $(CXXFLAGS) -c -o $@ $(USER_DIR)/findcmd.cpp
+
+obj/storecmd.o: $(USER_HEADERS)/parser/comando.hpp $(USER_HEADERS)/parser/storecmd.hpp $(USER_DIR)/storecmd.cpp
+	$(CXX) $(CXXFLAGS) -c -o $@ $(USER_DIR)/storecmd.cpp
+
+obj/entercmd.o: $(USER_HEADERS)/parser/comando.hpp $(USER_HEADERS)/parser/entercmd.hpp $(USER_DIR)/entercmd.cpp
+	$(CXX) $(CXXFLAGS) -c -o $@ $(USER_DIR)/entercmd.cpp
+
+obj/parser.o: $(USER_HEADERS)/parser/sintatico.hpp $(USER_HEADERS)/parser/parser.hpp $(USER_DIR)/parser.cpp
+	$(CXX) $(CXXFLAGS) -c -o $@ $(USER_DIR)/parser.cpp
+
+obj/parser_test.o: src/parser_test.cpp $(USER_HEADERS)/parser/parser.hpp \
+				$(INC_CMDS) $(GTEST_HEADERS)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c src/parser_test.cpp -o $@
+
+build/test.out: $(TESTS_OBJS) $(OBJS_PARSER) obj/gtest_main.a
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $^ -o $@
-
-build/loggen.out: obj/loggen.o
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@
