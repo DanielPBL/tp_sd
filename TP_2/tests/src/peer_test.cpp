@@ -32,12 +32,18 @@ namespace {
         EXPECT_NO_THROW(p2.start());
     }
 
+    /**
+    A PARTIR DAQUI, SLEEPS FORAM USADOS DEVIDO A SOBRECARGA DE THREADS
+    E (PORCAMENTE) PARA SINCRONIZAÇÂO =)
+    **/
+
     // Teste da inserção dos peers
     TEST(PeerTest, EnterCmd) {
+        testing::internal::CaptureStdout();
         EXPECT_NO_THROW(p2.parse("ENTER \"localhost\" 5000"));
-
-        //Espera a requisição ser atendida
-        while (p1.getPrev().id == p1.getId());
+        usleep(200);
+        string output = testing::internal::GetCapturedStdout();
+        EXPECT_NE(output.find("Requisição concluída"), string::npos);
 
         EXPECT_EQ(832, p1.getNext().id);
         EXPECT_EQ(832, p1.getPrev().id);
@@ -45,37 +51,32 @@ namespace {
         EXPECT_EQ(856, p2.getPrev().id);
     }
 
-    /**
-    A PARTIR DAQUI, SLEEPS FORAM USADOS DEVIDO A SOBRECARGA DE THREADS
-    E (PORCAMENTE) PARA SINCRONIZAÇÂO =)
-    **/
-
     // Teste da inserção de tuplas na rede
     TEST(PeerTest, StoreCmd) {
-        sleep(1);
+        usleep(200);
         EXPECT_NO_THROW(p2.parse("STORE(<856, \"856\">)"));
-        sleep(1);
+        usleep(200);
         EXPECT_NO_THROW(p1.parse("STORE(<832, \"832\">)"));
-        sleep(1);
+        usleep(200);
     }
 
     // Testa da busca de tuplas
     TEST(PeerTest, FindCmd) {
         testing::internal::CaptureStdout();
         EXPECT_NO_THROW(p1.parse("FIND(1)"));
-        sleep(1);
+        usleep(200);
         string output = testing::internal::GetCapturedStdout();
         EXPECT_NE(output.find("Chave não encontrada na rede."), string::npos);
 
         testing::internal::CaptureStdout();
         EXPECT_NO_THROW(p1.parse("FIND(856)"));
-        sleep(1);
+        usleep(200);
         output = testing::internal::GetCapturedStdout();
         EXPECT_NE(output.find("856"), string::npos);
 
         testing::internal::CaptureStdout();
         EXPECT_NO_THROW(p1.parse("FIND(832)"));
-        sleep(1);
+        usleep(200);
         output = testing::internal::GetCapturedStdout();
         EXPECT_NE(output.find("832"), string::npos);
     }
