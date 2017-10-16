@@ -77,8 +77,7 @@ Peer::Peer(string addr, string port) {
             continue;
         }
 
-        if (setsockopt(this->sockfd, SOL_SOCKET, SO_REUSEADDR, &yes,
-                sizeof(int)) == -1) {
+        if (setsockopt(this->sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
             perror("Erro ao setar opções do socket");
             exit(1);
         }
@@ -105,10 +104,53 @@ Peer::Peer(string addr, string port) {
     }
 }
 
-/** Destrutor, fecha o socket do servidor
+/** Método getter do Id
+* @return unsigned long
 */
+unsigned long Peer::getId() const {
+    return this->id;
+}
+
+/** Método getter do IP
+* @return string
+*/
+string Peer::getIp() const {
+    return this->ip;
+}
+
+/** Método getter da porta
+* @return string
+*/
+string Peer::getPorta() const {
+    return this->porta;
+}
+
+/** Método getter do peer apontado como próximo
+* @return Vizinho
+*/
+Vizinho Peer::getNext() const {
+    return this->next;
+}
+
+/** Método getter do peer apontado como anterior
+* @return Vizinho
+*/
+Vizinho Peer::getPrev() const {
+    return this->prev;
+}
+
+/** Destrutor, fecha o socket do servidor */
 Peer::~Peer() {
     close(this->sockfd);
+}
+
+/** Método que cria a thread do servidor */
+void Peer::start() {
+    pthread_t t_id;
+
+    if (pthread_create(&t_id, NULL, Peer::serve, this) != 0) {
+        throw "Erro ao criar thread do servidor";
+    }
 }
 
 /** Método que Implementa um servidor concorrente
@@ -142,6 +184,7 @@ void Peer::serve() {
 /** Método para se conectar a um IP e PORTA
 * @param addr string - IP para requisitar conexão
 * @param port string - PORTA para requisitar conexão
+* @return int - FD para o socket da conexão
 */
 int Peer::pconnect(string addr, string port) {
     int connfd;
@@ -235,7 +278,7 @@ Message* Peer::receive(int connfd) {
 /** Método que trata as requisições que chegam ao servidor
 * @param msg Message* - Ponteiro para a mensagem que deve ser atendida
 */
-void Peer::processa(int connfd, Message *msg) {
+void Peer::processa(Message *msg) {
     switch (msg->getType()) {
         // Requisição para entrar na rede
         case Message::MSG_ENTER: {
@@ -303,7 +346,9 @@ void Peer::processa(int connfd, Message *msg) {
             Message *resp;
             Vizinho peer = {
                 .ip = msg->getAddr(),
-                .porta = msg->getPort()
+                .porta = msg->getPort(),
+                .sockfd = 0,
+                .id = Peer::hash(msg->getAddr() + ":" + msg->getPort())
             };
             // Flag que indica se o id 0 da rede está entre o peer atual e o próximo
             int zero_entre = (this->prev.id > this->id);
@@ -508,9 +553,7 @@ void Peer::processa(int connfd, Message *msg) {
         }
             break;
         default:
-            cout << "Mensagem sem tratamento" << endl;
-            cout << msg->toString() << endl;
-            break;
+            throw "Mensagem sem tratamento";
     }
 }
 
@@ -524,7 +567,7 @@ void* Peer::processa(void *con) {
     Message *msg;
 
     msg = p->receive(conexao->connfd);
-    p->processa(conexao->connfd, msg);
+    p->processa(msg);
     close(conexao->connfd);
 
     delete conexao;
@@ -576,14 +619,14 @@ void Peer::parse(string cmd) {
             }
 
             if (!req->done) {
-                cerr << "Tempo limite excedido" << endl;
+                cerr << "Tempo limite excedido." << endl;
             } else {
                 t = clock() - req->t;
                 cout << "Requisição concluída em " << ((float) t) / CLOCKS_PER_SEC << " segundos." << endl;
             }
 
             // Exclui a requisição
-            this->reqs.erase(msg->getToId());
+            this->reqs.erase(msg->getId());
             delete req;
             delete msg;
         }
@@ -616,14 +659,14 @@ void Peer::parse(string cmd) {
             }
 
             if (!req->done) {
-                cerr << "Tempo limite excedido" << endl;
+                cerr << "Tempo limite excedido." << endl;
             } else {
                 t = clock() - req->t;
                 cout << "Requisição concluída em " << ((float) t) / CLOCKS_PER_SEC << " segundos." << endl;
             }
 
             // Exclui a requisição
-            this->reqs.erase(msg->getToId());
+            this->reqs.erase(msg->getId());
             delete req;
             delete msg;
         }

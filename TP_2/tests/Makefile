@@ -41,7 +41,8 @@ CXXFLAGS += -g -Wall -Wextra -pthread -I$(USER_HEADERS)
 TESTS = build/test.out
 
 TESTS_OBJS = obj/message.o obj/msgfct.o obj/message_test.o \
-			 obj/parser.o obj/parser_test.o
+			 obj/parser.o obj/parser_test.o \
+			 obj/peer.o obj/peer_test.o
 
 # All Google Test headers.  Usually you shouldn't change this
 # definition.
@@ -53,7 +54,7 @@ GTEST_HEADERS = $(GTEST_DIR)/include/gtest/*.h \
 all : $(TESTS)
 
 clean :
-	rm -f $(TESTS) obj/gtest.a obj/gtest_main.a obj/*.o build/*.out
+	rm -f $(TESTS) $(TESTS_OBJS) obj/gtest.a obj/gtest_main.a obj/*.o build/*.out
 
 # Builds gtest.a and gtest_main.a.
 
@@ -121,6 +122,12 @@ obj/parser.o: $(USER_HEADERS)/parser/sintatico.hpp $(USER_HEADERS)/parser/parser
 obj/parser_test.o: src/parser_test.cpp $(USER_HEADERS)/parser/parser.hpp \
 				$(INC_CMDS) $(GTEST_HEADERS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c src/parser_test.cpp -o $@
+
+obj/peer.o: $(USER_HEADERS)/parser/parser.hpp $(USER_HEADERS)/peer.hpp $(USER_DIR)/peer.cpp
+	$(CXX) $(CXXFLAGS) -c -o $@ $(USER_DIR)/peer.cpp
+
+obj/peer_test.o: src/peer_test.cpp $(USER_HEADERS)/peer.hpp $(GTEST_HEADERS)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c src/peer_test.cpp -o $@
 
 build/test.out: $(TESTS_OBJS) $(OBJS_PARSER) obj/gtest_main.a
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $^ -o $@

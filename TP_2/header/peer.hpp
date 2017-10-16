@@ -44,13 +44,20 @@ public:
     Peer(std::string addr, std::string port);
     ~Peer();
 
+    void start();
     void serve();
     void pconnect(Vizinho &peer);
     int pconnect(std::string addr, std::string port);
     void psend(int connfd, Message *msg);
     Message *receive(int connfd);
     void parse(std::string cmd);
-    void processa(int connfd, Message *msg);
+    void processa(Message *msg);
+
+    unsigned long getId() const;
+    std::string getIp() const;
+    std::string getPorta() const;
+    Vizinho getNext() const;
+    Vizinho getPrev() const;
 
     static unsigned long hash(const std::string &s);
     static void* processa(void *con);

@@ -14,6 +14,7 @@ namespace {
         MessageFactory msgFct;
         Message *msg1 = msgFct.newMessage();
 
+        EXPECT_EQ(1, msg1->getId());
         EXPECT_EQ("", msg1->getAddr());
         EXPECT_EQ("", msg1->getPort());
         EXPECT_EQ("", msg1->getText());
@@ -22,6 +23,7 @@ namespace {
 
         // Testa construtor de string
         Message *msg2 = msgFct.parseMessage("Id: 2\nType: ACK\nAddr: localhost\nPort: 8080\nSize: 0\n");
+        EXPECT_EQ(2, msg2->getId());
         EXPECT_EQ("localhost", msg2->getAddr());
         EXPECT_EQ("8080", msg2->getPort());
         EXPECT_EQ("", msg2->getText());
