@@ -23,7 +23,11 @@
 
 using namespace std;
 
-unsigned long Peer::hash(const std::string &s) {
+/** Método estático para calcular o hash de uma string
+* @param s string& - Referência para a string que será sofre hash
+* @return unsigned long - Hash calculado
+*/
+unsigned long Peer::hash(const string &s) {
     unsigned long h = 0;
     char *str = (char*) s.c_str();
 
@@ -34,11 +38,16 @@ unsigned long Peer::hash(const std::string &s) {
     return (h % MAXNODES);
 }
 
-Peer::Peer(std::string addr, std::string port) {
+/** Contrutor da classe Peer
+* @param addr string - IP do peer
+* @param port string - PORTA do peer
+*/
+Peer::Peer(string addr, string port) {
     struct addrinfo hints, *servinfo, *p;
     int yes = 1;
     int rv;
 
+    // Inicialmente o peer aponta para ele mesmo em ambas direções.
     this->id = Peer::hash(addr + ":" + port);
     this->ip = addr;
     this->porta = port;
@@ -57,26 +66,26 @@ Peer::Peer(std::string addr, std::string port) {
     hints.ai_flags = AI_PASSIVE;
 
     if ((rv = getaddrinfo(NULL, port.c_str(), &hints, &servinfo)) != 0) {
-        fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
+        fprintf(stderr, "Erro ao obter informações do host: %s\n", gai_strerror(rv));
         exit(1);
     }
 
     for(p = servinfo; p != NULL; p = p->ai_next) {
         if ((this->sockfd = socket(p->ai_family, p->ai_socktype,
                 p->ai_protocol)) == -1) {
-            perror("server: socket");
+            perror("Erro ao criar socket");
             continue;
         }
 
         if (setsockopt(this->sockfd, SOL_SOCKET, SO_REUSEADDR, &yes,
                 sizeof(int)) == -1) {
-            perror("setsockopt");
+            perror("Erro ao setar opções do socket");
             exit(1);
         }
 
         if (bind(this->sockfd, p->ai_addr, p->ai_addrlen) == -1) {
             close(sockfd);
-            perror("server: bind");
+            perror("Erro ao vincular o socket");
             continue;
         }
 
@@ -86,22 +95,27 @@ Peer::Peer(std::string addr, std::string port) {
     freeaddrinfo(servinfo);
 
     if (p == NULL)  {
-        fprintf(stderr, "server: failed to bind\n");
+        fprintf(stderr, "Não foi possível vincular o socket\n");
         exit(1);
     }
 
     if (listen(this->sockfd, BACKLOG) == -1) {
-        perror("listen");
+        perror("Erro ao escutar conexões");
         exit(1);
     }
 }
 
+/** Destrutor, fecha o socket do servidor
+*/
 Peer::~Peer() {
     close(this->sockfd);
 }
 
+/** Método que Implementa um servidor concorrente
+* Para cada conexão cria uma tread para atender a requisição
+*/
 void Peer::serve() {
-    struct sockaddr_storage their_addr; // connector's address information
+    struct sockaddr_storage their_addr;
     socklen_t sin_size;
     int connfd;
     pthread_t thread;
@@ -125,7 +139,11 @@ void Peer::serve() {
     }
 }
 
-int Peer::pconnect(std::string addr, std::string port) {
+/** Método para se conectar a um IP e PORTA
+* @param addr string - IP para requisitar conexão
+* @param port string - PORTA para requisitar conexão
+*/
+int Peer::pconnect(string addr, string port) {
     int connfd;
     struct addrinfo hints, *servinfo, *p;
     int rv;
@@ -141,13 +159,13 @@ int Peer::pconnect(std::string addr, std::string port) {
     for(p = servinfo; p != NULL; p = p->ai_next) {
         if ((connfd = socket(p->ai_family, p->ai_socktype,
                 p->ai_protocol)) == -1) {
-            perror("client: socket");
+            perror("Erro ao criar socket");
             continue;
         }
 
         if (connect(connfd, p->ai_addr, p->ai_addrlen) == -1) {
             close(connfd);
-            perror("client: connect");
+            perror("Erro ao conectar no servidor");
             continue;
         }
 
@@ -161,10 +179,17 @@ int Peer::pconnect(std::string addr, std::string port) {
     return connfd;
 }
 
+/** Método para se conectar a um peer
+* @param peer Vizinho& - Referência para o peer que deseja conexão
+*/
 void Peer::pconnect(Vizinho &peer) {
     peer.sockfd = this->pconnect(peer.ip, peer.porta);
 }
 
+/** Método para enviar uma mensagem para uma dada conexão
+* @param connfd int - Socket para a conexão recebida
+* @param msg Message* - Ponteiro para a mensagem recebida
+*/
 void Peer::psend(int connfd, Message *msg) {
     string str = msg->toString();
 
@@ -174,6 +199,10 @@ void Peer::psend(int connfd, Message *msg) {
     }
 }
 
+/** Método que recebe uma mensagem de uma conexão informada
+* @param connfd int - Socket para a conexão recebida
+* @return Message* - Ponteiro para a mensagem recebida
+*/
 Message* Peer::receive(int connfd) {
     char buf[BUF_SIZE];
     stringstream ss;
@@ -185,7 +214,7 @@ Message* Peer::receive(int connfd) {
     buf[numBytes] = '\0';
     ss << buf;
 
-    /* Obtem informações da mensagem. Caso estaja incompleta, buffer < tamanho
+    /* Obtem informações da mensagem. Caso esteja incompleta, buffer < tamanho
        continua recebendo até completar a mensagem.
     */
     Message* aux = this->msgFct.parseMessage(buf);
@@ -203,8 +232,12 @@ Message* Peer::receive(int connfd) {
     return this->msgFct.parseMessage(ss.str());
 }
 
+/** Método que trata as requisições que chegam ao servidor
+* @param msg Message* - Ponteiro para a mensagem que deve ser atendida
+*/
 void Peer::processa(int connfd, Message *msg) {
     switch (msg->getType()) {
+        // Requisição para entrar na rede
         case Message::MSG_ENTER: {
             Message *resp;
             bool zero_entre = (this->next.id < this->id);
@@ -215,12 +248,14 @@ void Peer::processa(int connfd, Message *msg) {
                 .id = Peer::hash(msg->getAddr() + ":" + msg->getPort())
             };
 
-            if (this->id == this->next.id) {
-                // Rede vazia
+            if (this->id == this->next.id) { // Rede vazia
+                // Aponta para o novo peer
                 this->next.id = peer.id;
                 this->next.ip = peer.ip;
                 this->next.porta = peer.porta;
 
+                // Monta uma mensagem informando que o novo peer deve apontar para
+                // o peer que respondeu a requisição
                 resp = this->msgFct.newMessage();
                 resp->setAddr(this->ip);
                 resp->setPort(this->porta);
@@ -232,8 +267,9 @@ void Peer::processa(int connfd, Message *msg) {
                             + "Port: " + this->porta);
                 this->pconnect(peer);
             } else if (((peer.id > this->id) || (zero_entre && this->id > peer.id))
-                    && peer.id < this->next.id) {
-                // Inserir entre
+                    && peer.id < this->next.id) { // Inseir o novo peer entre o peer atual e o próximo
+                // Monta uma mensagem informando ao novo peer que seu próximo é o próximo do
+                // peer atual e seu anterior é o peer atual
                 resp = this->msgFct.newMessage();
                 resp->setAddr(this->ip);
                 resp->setPort(this->porta);
@@ -245,20 +281,22 @@ void Peer::processa(int connfd, Message *msg) {
                             + "Port: " + this->porta);
                 this->pconnect(peer);
 
+                // O próximo do peer atual se torna o novo peer
                 this->next.id = peer.id;
                 this->next.ip = peer.ip;
                 this->next.porta = peer.porta;
-            } else {
+            } else { // Não entra depois do peer do atual. Delega.
                 // Passa a requisição pro próximo
                 peer = this->next;
                 this->pconnect(peer);
                 resp = msg;
             }
-
+            // Envia a mensagem para o peer que requisitou entrada
             this->psend(peer.sockfd, resp);
             close(peer.sockfd);
         }
             break;
+        // Requisição de busca
         case Message::MSG_FIND: {
             FindCmd *find = (FindCmd*) this->parser.parse(msg->getText());
             Message *resp;
@@ -266,11 +304,12 @@ void Peer::processa(int connfd, Message *msg) {
                 .ip = msg->getAddr(),
                 .porta = msg->getPort()
             };
+            // Flag que indica se o id 0 da rede está entre o peer atual e o próximo
             int zero_entre = (this->prev.id > this->id);
 
             // Procura tupla em sua coleção, caso encontre, respode com a tupla,
-            // caso contrário manda pra quem sabe se possível
-            if (this->tuplas.find(find->K) != this->tuplas.end()) {
+            // caso contrário, delega para o próximo peer
+            if (this->tuplas.find(find->K) != this->tuplas.end()) { // Possuo a chave
                 peer.sockfd = this->pconnect(msg->getAddr(), msg->getPort());
                 resp = this->msgFct.newMessage();
                 resp->setAddr(this->ip);
@@ -278,28 +317,33 @@ void Peer::processa(int connfd, Message *msg) {
                 resp->setType(Message::MSG_RESP);
                 resp->setToId(msg->getId());
                 resp->setText("<" + SSTR(find->K) + ", \"" + this->tuplas[find->K] + "\">\n");
-            } else {
+            } else { // Não possuo a chave
                 // Verifica se deveria possuir a chave
                 if ((find->K > this->prev.id && find->K <= this->id) // Caso usual
                     || (this->id == this->next.id) // Rede com somente um peer
-                    || (zero_entre && ((find->K > this->prev.id && find->K > this->id)
-                    || find->K <= this->id))) {
+                    || (zero_entre && ((find->K > this->prev.id && find->K > this->id) // Chave entre o peer anterior e o zero
+                    || find->K <= this->id))) { // Chave entre o zero e o peer atual
+                    // Se era para o peer atual possuir a chave, então esta não existe na rede
+                    // Envia uma mensagem de erro para o peer que requisitou
                     peer.sockfd = this->pconnect(msg->getAddr(), msg->getPort());
                     resp = this->msgFct.newMessage();
                     resp->setAddr(this->ip);
                     resp->setPort(this->porta);
                     resp->setType(Message::MSG_ERROR);
                     resp->setToId(msg->getId());
-                } else {
+                } else { // Chave não pertence ao peer atual
+                    // Passa a requisição para o próximo peer
                     peer = this->next;
                     this->pconnect(peer);
                     resp = msg;
                 }
             }
+            // Envia a resposta
             this->psend(peer.sockfd, resp);
             close(peer.sockfd);
         }
             break;
+        // Requisição de armazenamento
         case Message::MSG_STORE: {
             string str, stores = "";
             stringstream ss;
@@ -316,15 +360,17 @@ void Peer::processa(int connfd, Message *msg) {
                     || (this->next.id == this->id) // Rede com somente um peer
                     || (zero_entre && ((store->tupla.first > this->prev.id && store->tupla.first > this->id)
                     || store->tupla.first <= this->id))) {
+                    // Chave é responsabilidade do peer atual. Armazena
                     this->tuplas.insert(store->tupla);
                 } else {
-                    // Passa pra quem sabe
+                    // Passa para o próximo chaves que não pertencem ao peer atual
                     stores += "STORE(<" + SSTR(store->tupla.first) + ",\"" + store->tupla.second + "\">)\n";
                 }
 
                 getline(ss, str, '\n');
             }
 
+            // Se existe alguma chave que não pertence ao peer atual
             if (stores.length() > 0) {
                 Message *repassa = this->msgFct.newMessage();
                 repassa->setAddr(this->ip);
@@ -332,6 +378,7 @@ void Peer::processa(int connfd, Message *msg) {
                 repassa->setType(Message::MSG_STORE);
                 repassa->setText(stores);
 
+                // Envia requisições de STORE para o próximo
                 this->pconnect(this->next);
                 this->psend(this->next.sockfd, repassa);
                 close(this->next.sockfd);
@@ -339,30 +386,38 @@ void Peer::processa(int connfd, Message *msg) {
             }
         }
             break;
+        // Resposta a alguma requisição
         case Message::MSG_RESP:
+            // Se é uma resposta para alguma requisição pendente do peer atual
             if (this->reqs.find(msg->getToId()) != this->reqs.end()) {
                 Message *r_msg = this->reqs[msg->getToId()]->msg;
                 switch (r_msg->getType()) {
+                    // Resposta a uma requisição de ENTER
                     case Message::MSG_ENTER: {
                         stringstream ss;
                         string str;
 
+                        // Peer que será o próximo do peer atual
                         ss.str(msg->getText());
                         getline(ss, str, '\n');
                         this->next.ip = str.substr(6);
                         getline(ss, str, '\n');
                         this->next.porta = str.substr(6);
 
+                        // Peer que será o anterior do peer atual
                         getline(ss, str, '\n');
                         this->prev.ip = str.substr(6);
                         getline(ss, str, '\n');
                         this->prev.porta = str.substr(6);
 
+                        // Calcula os ids
                         this->next.id = Peer::hash(this->next.ip + ":" + this->next.porta);
                         this->prev.id = Peer::hash(this->prev.ip + ":" + this->prev.porta);
 
+                        // Seta a requisição como atendida
                         this->reqs[msg->getToId()]->done = true;
 
+                        // Envia uma mensagem para o próximo, avisando que entrou na rede
                         Message *ack = this->msgFct.newMessage();
                         ack->setType(Message::MSG_ACK);
                         ack->setAddr(this->ip);
@@ -372,12 +427,15 @@ void Peer::processa(int connfd, Message *msg) {
                         close(this->next.sockfd);
                     }
                         break;
+                    // Resposta a uma requisição FIND
                     case Message::MSG_FIND: {
                         StoreCmd *store = (StoreCmd*) this->parser.parse("STORE(" + msg->getText() + ")");
 
+                        // Printa a tupla recebida
                         cout << msg->getAddr() << ":" << msg->getPort();
                         cout << " - " << store->tupla.second << endl;
 
+                        // Seta a requisição como atendida
                         this->reqs[msg->getToId()]->done = true;
                     }
                         break;
@@ -388,42 +446,51 @@ void Peer::processa(int connfd, Message *msg) {
                 throw "Resposta não esperada";
             }
             break;
+        // Alguma requisição resultou em erro
         case Message::MSG_ERROR:
+            // Erro para alguma requisição pendente
             if (this->reqs.find(msg->getToId()) != this->reqs.end()) {
+                // Erro para uma requisição de FIND: tupla não encontrada
                 if (this->reqs[msg->getToId()]->msg->getType() == Message::MSG_FIND) {
                     // Tupla não encontrada
                     cout << "Chave não encontrada na rede." << endl;
                     this->reqs[msg->getToId()]->done = true;
                 }
             } else {
-                cout << "Recebi um ERROR, mas não sei o que fazer." << endl;
-                cout << msg->toString() << endl;
+                throw "Mensagem de erro não esperada";
             }
             break;
+        // Informe que um peer entrou na rede, e está localizado antes do peer atual
         case Message::MSG_ACK: {
             unsigned long prev_id = this->prev.id;
             map<unsigned int, string>::iterator it;
             string stores = "";
+            // Flag que indica se o peer entrou antes do zero
             bool before_zero;
+            // Flag que informa se o zero da rede está entre o peer atual e seu anterior "antigo"
             bool zero_entre;
 
+            // Passa a apontar o anterior para o novo peer que entrou na rede
             this->prev.ip = msg->getAddr();
             this->prev.porta = msg->getPort();
             this->prev.id = Peer::hash(this->prev.ip + ":" + this->prev.porta);
 
+            // Seta flags
             zero_entre = (prev_id > this->id) || (prev_id == this->id && this->prev.id < this->id); // Inserção não usual
             before_zero = (this->prev.id > this->id);
 
             // Enviar para o peer as tuplas que pertencem ao seu intervalo de id
             for (it = this->tuplas.begin(); it != this->tuplas.end(); ++it) {
-                // Esse if precisa urgentemente de otimizações
-                if ((!zero_entre && it->first > prev_id && it->first <= this->prev.id) || (zero_entre
-                    && ((before_zero && it->first > prev_id && it->first <= this->prev.id)
-                    || (!before_zero && !(it->first > this->prev.id && it->first <= this->id))))) {
+                /*** Esse if precisa urgentemente de otimizações ***/
+                if ((!zero_entre && it->first > prev_id && it->first <= this->prev.id) // Caso usual
+                    || (zero_entre && ((before_zero && it->first > prev_id && it->first <= this->prev.id) // Peer entrou antes do zero
+                    || (!before_zero && !(it->first > this->prev.id && it->first <= this->id))))) { // Peer entrou depois do zero
                     stores += "STORE(<" + SSTR(it->first) + ",\"" + it->second + "\">)\n";
                 }
             }
 
+            // Se alguma chave na coleção do peer atual pertence ao peer que entrou, envia
+            // uma mensagem de STORE para esse.
             if (stores.length() > 0) {
                 Message *store = this->msgFct.newMessage();
                 store->setAddr(this->ip);
@@ -446,6 +513,10 @@ void Peer::processa(int connfd, Message *msg) {
     }
 }
 
+/** Método estático auxiliar para a criação da PThread que processa as requisições
+* @param arg void* - Ponteiro a estrutura que armazena o objeto peer e o socket da conexão
+* da conexão recebida
+*/
 void* Peer::processa(void *con) {
     Conexao *conexao = (Conexao*) con;
     Peer *p = (Peer*) conexao->self;
@@ -460,16 +531,23 @@ void* Peer::processa(void *con) {
     pthread_exit(NULL);
 }
 
+/** Método estático auxiliar para a criação da PThread que recebe requisições
+* @param arg void* - Ponteiro para o objeto da classe Peer
+*/
 void* Peer::serve(void *arg) {
     Peer *peer = (Peer*) arg;
     peer->serve();
     pthread_exit(NULL);
 }
 
+/** Método que interpreta os comandos do cliente
+* @param cmd string - Comando informado na linha de comandos
+*/
 void Peer::parse(string cmd) {
     Comando *comando = this->parser.parse(cmd);
 
     switch (comando->tipo) {
+        // Comando para entrar na rede. ENTER "IP" PORTA
         case Comando::CMD_ENTER: {
             EnterCmd *enter = (EnterCmd*) comando;
             Message *msg = this->msgFct.newMessage();
@@ -484,6 +562,7 @@ void Peer::parse(string cmd) {
             msg->setPort(this->porta);
             msg->setType(Message::MSG_ENTER);
 
+            // Envia uma mensagem de ENTER para o peer informado
             connfd = this->pconnect(enter->ip, enter->porta);
             this->psend(connfd, msg);
             close(this->next.sockfd);
@@ -502,11 +581,13 @@ void Peer::parse(string cmd) {
                 cout << "Requisição concluída em " << ((float) t) / CLOCKS_PER_SEC << " segundos." << endl;
             }
 
+            // Exclui a requisição
             this->reqs.erase(msg->getToId());
             delete req;
             delete msg;
         }
             break;
+        // Comando para buscar uma chave. FIND(K)
         case Comando::CMD_FIND: {
             FindCmd *find = (FindCmd*) comando;
             Message *msg = this->msgFct.newMessage();
@@ -521,6 +602,7 @@ void Peer::parse(string cmd) {
             msg->setType(Message::MSG_FIND);
             msg->setText("FIND(" + SSTR(find->K) + ")\n");
 
+            // Envia a requisição de FIND para seu próprio SERVER
             int connfd = this->pconnect(this->ip, this->porta);
             this->psend(connfd, msg);
             close(connfd);
@@ -539,20 +621,24 @@ void Peer::parse(string cmd) {
                 cout << "Requisição concluída em " << ((float) t) / CLOCKS_PER_SEC << " segundos." << endl;
             }
 
+            // Exclui a requisição
             this->reqs.erase(msg->getToId());
             delete req;
             delete msg;
         }
             break;
+        // Comando para listar os vizinhos e as truplas. LIST
         case Comando::CMD_LIST:
             cout << "Vizinhos: " << endl;
-            cout << "Próximo - " << this->next.ip << ":" << this->next.porta  << " (" << this->next.id << ")" << endl;
             cout << "Anterior - " << this->prev.ip << ":" << this->prev.porta  << " (" << this->prev.id << ")" << endl;
+            cout << "Próximo - " << this->next.ip << ":" << this->next.porta  << " (" << this->next.id << ")" << endl;
+            cout << endl;
             cout << "Tuplas Armazenadas:" << endl;
             for (map<unsigned int, string>::iterator it = this->tuplas.begin(); it != this->tuplas.end(); ++it) {
                 cout << "<" << it->first << ", \"" << it->second << "\">" << endl;
             }
             break;
+        // Comando para armazenar uma trupla. STORE(<K,V>)
         case Comando::CMD_STORE: {
             StoreCmd *store = (StoreCmd*) comando;
             Message *msg = this->msgFct.newMessage();
@@ -562,6 +648,7 @@ void Peer::parse(string cmd) {
             msg->setType(Message::MSG_STORE);
             msg->setText("STORE(<" + SSTR(store->tupla.first) + ",\"" + store->tupla.second + "\">)\n");
 
+            // Envia a requisição de STORE para o próprio SERVER
             int connfd = this->pconnect(this->ip, this->porta);
             this->psend(connfd, msg);
             close(connfd);
@@ -569,12 +656,16 @@ void Peer::parse(string cmd) {
             delete msg;
         }
             break;
+        // Comando para encerrar a aplicação. QUIT
         case Comando::CMD_QUIT:
+            // Encerra a aplicação
             close(this->sockfd);
             cout << "Adeus!" << endl;
             exit(EXIT_SUCCESS);
             break;
+        // Demais comandos
         default:
+            // Tratamento padrão: chama o método executar do comando.
             comando->executar();
     }
 
