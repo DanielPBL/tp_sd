@@ -41,7 +41,7 @@ namespace {
     TEST(PeerTest, EnterCmd) {
         testing::internal::CaptureStdout();
         EXPECT_NO_THROW(p2.parse("ENTER \"localhost\" 5000"));
-        usleep(200);
+        usleep(600);
         string output = testing::internal::GetCapturedStdout();
         EXPECT_NE(output.find("Requisição concluída"), string::npos);
 
@@ -53,30 +53,30 @@ namespace {
 
     // Teste da inserção de tuplas na rede
     TEST(PeerTest, StoreCmd) {
-        usleep(200);
+        usleep(600);
         EXPECT_NO_THROW(p2.parse("STORE(<856, \"856\">)"));
-        usleep(200);
+        usleep(600);
         EXPECT_NO_THROW(p1.parse("STORE(<832, \"832\">)"));
-        usleep(200);
+        usleep(600);
     }
 
     // Testa da busca de tuplas
     TEST(PeerTest, FindCmd) {
         testing::internal::CaptureStdout();
         EXPECT_NO_THROW(p1.parse("FIND(1)"));
-        usleep(200);
+        usleep(600);
         string output = testing::internal::GetCapturedStdout();
         EXPECT_NE(output.find("Chave não encontrada na rede."), string::npos);
 
         testing::internal::CaptureStdout();
         EXPECT_NO_THROW(p1.parse("FIND(856)"));
-        usleep(200);
+        usleep(600);
         output = testing::internal::GetCapturedStdout();
         EXPECT_NE(output.find("856"), string::npos);
 
         testing::internal::CaptureStdout();
         EXPECT_NO_THROW(p1.parse("FIND(832)"));
-        usleep(200);
+        usleep(600);
         output = testing::internal::GetCapturedStdout();
         EXPECT_NE(output.find("832"), string::npos);
     }
