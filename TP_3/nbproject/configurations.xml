@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configurationDescriptor version="100">
+  <logicalFolder name="root" displayName="root" projectFiles="true" kind="ROOT">
+    <df root="." name="0">
+      <df name="src">
+        <in>comando.cpp</in>
+        <in>entercmd.cpp</in>
+        <in>findcmd.cpp</in>
+        <in>helpcmd.cpp</in>
+        <in>lexico.cpp</in>
+        <in>main.cpp</in>
+        <in>message.cpp</in>
+        <in>msgfct.cpp</in>
+        <in>parser.cpp</in>
+        <in>peer.cpp</in>
+        <in>sintatico.cpp</in>
+        <in>storecmd.cpp</in>
+      </df>
+    </df>
+    <logicalFolder name="ExternalFiles"
+                   displayName="Arquivos Importantes"
+                   projectFiles="false"
+                   kind="IMPORTANT_FILES_FOLDER">
+      <itemPath>Makefile</itemPath>
+      <itemPath>nbproject/private/launcher.properties</itemPath>
+    </logicalFolder>
+  </logicalFolder>
+  <sourceFolderFilter>^(nbproject)$</sourceFolderFilter>
+  <sourceRootList>
+    <Elem>.</Elem>
+  </sourceRootList>
+  <projectmakefile>Makefile</projectmakefile>
+  <confs>
+    <conf name="Default" type="0">
+      <toolsSet>
+        <compilerSet>default</compilerSet>
+        <dependencyChecking>false</dependencyChecking>
+        <rebuildPropChanged>false</rebuildPropChanged>
+      </toolsSet>
+      <codeAssistance>
+      </codeAssistance>
+      <makefileType>
+        <makeTool>
+          <buildCommandWorkingDir>.</buildCommandWorkingDir>
+          <buildCommand>${MAKE} -f Makefile</buildCommand>
+          <cleanCommand>${MAKE} -f Makefile clean</cleanCommand>
+          <executablePath>build/peer.out</executablePath>
+          <ccTool>
+            <incDir>
+              <pElem>header</pElem>
+              <pElem>.</pElem>
+            </incDir>
+          </ccTool>
+        </makeTool>
+        <preBuild>
+          <preBuildCommandWorkingDir>.</preBuildCommandWorkingDir>
+          <preBuildCommand></preBuildCommand>
+        </preBuild>
+      </makefileType>
+      <item path="src/comando.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/entercmd.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/findcmd.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/helpcmd.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/lexico.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/main.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/message.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/msgfct.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/parser.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/peer.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/sintatico.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/storecmd.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+    </conf>
+  </confs>
+</configurationDescriptor>
