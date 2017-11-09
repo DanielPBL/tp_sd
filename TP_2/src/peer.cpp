@@ -609,7 +609,7 @@ void Peer::parse(string cmd) {
             // Envia uma mensagem de ENTER para o peer informado
             connfd = this->pconnect(enter->ip, enter->porta);
             this->psend(connfd, msg);
-            close(this->next.sockfd);
+            close(connfd);
 
             // Espera TIMEOUT segundos ou até receber a resposta
             req->t = clock();

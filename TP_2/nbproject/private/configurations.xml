@@ -41,6 +41,9 @@
         <df name="obj">
         </df>
         <df name="src">
+          <in>message_test.cpp</in>
+          <in>parser_test.cpp</in>
+          <in>peer_test.cpp</in>
         </df>
       </df>
     </df>

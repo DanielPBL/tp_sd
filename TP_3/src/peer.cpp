@@ -221,6 +221,8 @@ int Peer::pconnect(string addr, string port) {
         break;
     }
 
+    freeaddrinfo(servinfo);
+
     if (p == NULL) {
         throw "Falha ao conectar";
     }
@@ -348,10 +350,7 @@ void Peer::processa(Message *msg) {
             break;
         // Mensagem para a sincronização das listas de membros
         case Message::MSG_SYNC: {
-            cout << msg->getAddr() << endl;
-            cout << msg->getPort() << endl;
-            cout << msg->getText();
-            unsigned int memberId, msgPId = Peer::hash(msg->getAddr() + ":" + msg->getPort());
+            /*unsigned int memberId, msgPId = Peer::hash(msg->getAddr() + ":" + msg->getPort());
             EnterCmd *enter;
             list<Comando*> enterCmds = this->parser.parseEnters(msg->getText());
             string members;
@@ -375,7 +374,7 @@ void Peer::processa(Message *msg) {
                 this->pconnect(this->next);
                 this->psend(this->next.sockfd, msg);
                 close(this->next.sockfd);
-            }
+            }*/
         }
             break;
         // Requisição de busca
@@ -664,7 +663,7 @@ void Peer::parse(string cmd) {
             // Envia uma mensagem de ENTER para o peer informado
             connfd = this->pconnect(enter->ip, enter->porta);
             this->psend(connfd, msg);
-            close(this->next.sockfd);
+            close(connfd);
 
             // Espera TIMEOUT segundos ou até receber a resposta
             req->t = clock();
@@ -758,7 +757,7 @@ void Peer::parse(string cmd) {
         // Comando para mostrar a lista de membros no grupo. MEMBERS
         case Comando::CMD_MEMBERS: {
             map<unsigned int, Vizinho>::iterator it;
-            
+
             for (it = this->membros.begin(); it != this->membros.end(); ++it) {
                 cout << it->second.ip << ":" << it->second.porta << " (" << it->first << ")" << endl;
             }
