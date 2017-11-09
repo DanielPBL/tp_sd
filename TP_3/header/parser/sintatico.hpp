@@ -20,6 +20,7 @@ public:
 	void matchToken(int tipo);
 	Comando* init();
 	std::list<Comando*> stores();
+	std::list<Comando*> enters();
 private:
 	void lancaExcessao(std::string msg);
 	void lancaExcessao();
@@ -27,11 +28,13 @@ private:
 	Comando* procPrograma();
 	Comando* procComando();
 	EnterCmd* procEnter();
+	std::list<Comando*> procEnters();
 	FindCmd* procFind();
 	StoreCmd* procStore();
 	std::list<Comando*> procStores();
 	Comando* procList();
 	Comando* procQuit();
+	Comando* procMembers();
 	HelpCmd* procHelp();
 	std::pair<int, std::string> procPair();
 	int procChave();

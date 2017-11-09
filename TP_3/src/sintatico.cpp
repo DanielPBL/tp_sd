@@ -46,6 +46,11 @@ std::list<Comando*> AnalisadorSintatico::stores() {
 	return this->procStores();
 }
 
+std::list<Comando*> AnalisadorSintatico::enters() {
+	this->atual = lexico.getLexema();
+	return this->procEnters();
+}
+
 Comando* AnalisadorSintatico::procPrograma() {
 	Comando *cmd;
 
@@ -77,6 +82,9 @@ Comando* AnalisadorSintatico::procComando() {
 	case HELP:
 		cmd = this->procHelp();
 		break;
+	case MEMBERS:
+		cmd = this->procMembers();
+		break;
 	default:
 		cmd = new Comando(Comando::CMD_NULL);
 		this->lancaExcessao();
@@ -91,6 +99,16 @@ EnterCmd* AnalisadorSintatico::procEnter() {
 	string porta = SSTR(this->procChave());
 
 	return new EnterCmd(ip, porta);
+}
+
+list<Comando*> AnalisadorSintatico::procEnters() {
+	list<Comando*> stores;
+
+	while (this->atual.tipo != FIM_COMANDO_NORMAL) {
+		stores.push_back(this->procEnter());
+	}
+
+	return stores;
 }
 
 FindCmd* AnalisadorSintatico::procFind() {
@@ -131,6 +149,12 @@ Comando* AnalisadorSintatico::procQuit() {
 	this->matchToken(QUIT);
 
 	return new Comando(Comando::CMD_QUIT);
+}
+
+Comando* AnalisadorSintatico::procMembers() {
+	this->matchToken(MEMBERS);
+
+	return new Comando(Comando::CMD_MEMBERS);
 }
 
 HelpCmd* AnalisadorSintatico::procHelp() {

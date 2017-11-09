@@ -20,7 +20,10 @@ public:
         MSG_STORE,
         MSG_RESP,
         MSG_ENTER,
-        MSG_ACK
+        MSG_ACK,
+        MSG_HEARTB,
+        MSG_SYNC,
+        MSG_DIED
     };
 private:
     unsigned int id;

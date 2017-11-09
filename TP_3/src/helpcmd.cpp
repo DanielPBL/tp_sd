@@ -13,6 +13,7 @@ void HelpCmd::executar() {
     cout << "STORE(<K,\"V\">) - armazena a tupla na rede" << endl;
     cout << "FIND(K) - busca a tupla identificada por K na rede" << endl;
     cout << "LIST - lista os peers vizinhos e as tuplas armazenadas neste peer" << endl;
+    cout << "MEMBERS - lista todos os peers filiados ao grupo" << endl;
     cout << "HELP - exibe texto de ajuda" << endl;
     cout << "QUIT - encerra a aplicação" << endl;
 }

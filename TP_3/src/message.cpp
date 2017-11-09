@@ -139,6 +139,12 @@ string Message::TypeDesc(Message::Type type) {
             return "ENTER";
         case Message::MSG_ACK:
             return "ACK";
+        case Message::MSG_HEARTB:
+            return "HEARTBEAT";
+        case Message::MSG_SYNC:
+            return "SYNC";
+        case Message::MSG_DIED:
+            return "DIED";
     }
 
     return "ERROR";
@@ -159,6 +165,12 @@ Message::Type Message::FindType(std::string type) {
         return Message::MSG_ENTER;
     } else if (type == "ACK") {
         return Message::MSG_ACK;
+    } else if (type == "HEARTBEAT") {
+        return Message::MSG_HEARTB;
+    } else if (type == "SYNC") {
+        return Message::MSG_SYNC;
+    } else if (type == "DIED") {
+        return Message::MSG_DIED;
     } else {
         return Message::MSG_ERROR;
     }

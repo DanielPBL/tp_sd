@@ -16,6 +16,7 @@ public:
     ~Parser();
     Comando* parse(std::string cmd);
     std::list<Comando*> parseStores(std::string cmd);
+    std::list<Comando*> parseEnters(std::string cmd);
 };
 
 #endif

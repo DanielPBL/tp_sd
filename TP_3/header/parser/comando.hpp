@@ -10,7 +10,8 @@ public:
         CMD_LIST,
         CMD_ENTER,
         CMD_QUIT,
-        CMD_HELP
+        CMD_HELP,
+        CMD_MEMBERS
     };
     Type tipo;
 

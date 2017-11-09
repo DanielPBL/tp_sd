@@ -61,17 +61,18 @@ int AnalisadorLexico::consultarTabelaSimbolos(string token) {
 }
 
 void AnalisadorLexico::criarTabelaSimbolos() {
-	this->tabelaSimbolos["find"]   = FIND;
-	this->tabelaSimbolos["store"]  = STORE;
-	this->tabelaSimbolos["("]      = ABRE_PRNTS;
-	this->tabelaSimbolos[")"]      = FECHA_PRNTS;
-	this->tabelaSimbolos[">"]      = MAIOR;
-	this->tabelaSimbolos["<"]      = MENOR;
-	this->tabelaSimbolos[","]      = VIRGULA;
-	this->tabelaSimbolos["quit"]   = QUIT;
-	this->tabelaSimbolos["help"]   = HELP;
-	this->tabelaSimbolos["enter"]  = ENTER;
-	this->tabelaSimbolos["list"]   = LIST;
+	this->tabelaSimbolos["find"]    = FIND;
+	this->tabelaSimbolos["store"]   = STORE;
+	this->tabelaSimbolos["("]       = ABRE_PRNTS;
+	this->tabelaSimbolos[")"]       = FECHA_PRNTS;
+	this->tabelaSimbolos[">"]       = MAIOR;
+	this->tabelaSimbolos["<"]       = MENOR;
+	this->tabelaSimbolos[","]       = VIRGULA;
+	this->tabelaSimbolos["quit"]    = QUIT;
+	this->tabelaSimbolos["help"]    = HELP;
+	this->tabelaSimbolos["enter"]   = ENTER;
+	this->tabelaSimbolos["list"]    = LIST;
+	this->tabelaSimbolos["members"] = MEMBERS;
 }
 
 void AnalisadorLexico::ungetChar() {

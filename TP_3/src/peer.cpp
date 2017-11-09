@@ -39,7 +39,7 @@ unsigned long Peer::hash(const string &s) {
     return (h % MAXNODES);
 }
 
-/** Contrutor da classe Peer
+/** Construtor da classe Peer
 * @param addr string - IP do peer
 * @param port string - PORTA do peer
 */
@@ -60,6 +60,11 @@ Peer::Peer(string addr, string port) {
     this->prev.id = this->id;
     this->prev.ip = addr;
     this->prev.porta = port;
+
+    // Adiciona o próprio peer a lista de membros
+    this->membros[this->id].id = this->id;
+    this->membros[this->id].ip = this->ip;
+    this->membros[this->id].porta = this->porta;
 
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;
@@ -336,9 +341,41 @@ void Peer::processa(Message *msg) {
                 this->pconnect(peer);
                 resp = msg;
             }
-            // Envia a mensagem para o peer que requisitou entrada
+            // Envia a mensagem para o peer que requisitou entrada ou pra quem delegou
             this->psend(peer.sockfd, resp);
             close(peer.sockfd);
+        }
+            break;
+        // Mensagem para a sincronização das listas de membros
+        case Message::MSG_SYNC: {
+            cout << msg->getAddr() << endl;
+            cout << msg->getPort() << endl;
+            cout << msg->getText();
+            unsigned int memberId, msgPId = Peer::hash(msg->getAddr() + ":" + msg->getPort());
+            EnterCmd *enter;
+            list<Comando*> enterCmds = this->parser.parseEnters(msg->getText());
+            string members;
+
+            for (list<Comando*>::iterator it = enterCmds.begin(); it != enterCmds.end(); ++it) {
+                enter = (EnterCmd*) *it;
+                memberId = Peer::hash(enter->ip + ":" + enter->porta);
+                this->membros[memberId].id = memberId;
+                this->membros[memberId].ip = enter->ip;
+                this->membros[memberId].porta = enter->porta;
+            }
+
+            // Se a mensagem for do peer atual, é sinal que a mensagem deu a volta no
+            // anel e sua propagração deve ser interrompida
+            if (this->id != msgPId) {
+                for (map<unsigned int, Vizinho>::iterator it = this->membros.begin(); it != this->membros.end(); ++it) {
+                    members += "ENTER \"" + it->second.ip + "\" " + SSTR(it->second.porta) + "\n";
+                }
+                msg->setText(members);
+
+                this->pconnect(this->next);
+                this->psend(this->next.sockfd, msg);
+                close(this->next.sockfd);
+            }
         }
             break;
         // Requisição de busca
@@ -392,8 +429,7 @@ void Peer::processa(Message *msg) {
             break;
         // Requisição de armazenamento
         case Message::MSG_STORE: {
-            string str, stores = "";
-            stringstream ss;
+            string stores = "";
             StoreCmd *store;
             list<Comando*> storeCmds;
             list<Comando*>::iterator it;
@@ -471,6 +507,25 @@ void Peer::processa(Message *msg) {
                         this->pconnect(this->next);
                         this->psend(this->next.sockfd, ack);
                         close(this->next.sockfd);
+                        delete ack;
+
+                        // Propaga a atualização da lista de membros pelo anel
+                        Message *sync = this->msgFct.newMessage();
+                        sync->setType(Message::MSG_SYNC);
+                        sync->setAddr(this->ip);
+                        sync->setPort(this->porta);
+
+                        map<unsigned int, Vizinho>::iterator it;
+                        string members;
+                        for (it = this->membros.begin(); it != this->membros.end(); ++it) {
+                            members += "ENTER \"" + it->second.ip + "\" " + SSTR(it->second.porta) + "\n";
+                        }
+
+                        sync->setText(members);
+                        this->pconnect(this->next);
+                        this->psend(this->next.sockfd, sync);
+                        close(this->next.sockfd);
+                        delete sync;
                     }
                         break;
                     // Resposta a uma requisição FIND
@@ -698,6 +753,15 @@ void Peer::parse(string cmd) {
             close(connfd);
 
             delete msg;
+        }
+            break;
+        // Comando para mostrar a lista de membros no grupo. MEMBERS
+        case Comando::CMD_MEMBERS: {
+            map<unsigned int, Vizinho>::iterator it;
+            
+            for (it = this->membros.begin(); it != this->membros.end(); ++it) {
+                cout << it->second.ip << ":" << it->second.porta << " (" << it->first << ")" << endl;
+            }
         }
             break;
         // Comando para encerrar a aplicação. QUIT

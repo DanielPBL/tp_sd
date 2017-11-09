@@ -23,3 +23,8 @@ list<Comando*> Parser::parseStores(string cmd) {
     this->lexico->setComando(cmd);
     return this->sintatico->stores();
 }
+
+list<Comando*> Parser::parseEnters(string cmd) {
+    this->lexico->setComando(cmd);
+    return this->sintatico->enters();
+}

@@ -40,6 +40,7 @@ private:
     Vizinho next, prev;
     std::map<unsigned int, std::string> tuplas;
     std::map<unsigned int, Requisicao*> reqs;
+    std::map<unsigned int, Vizinho> membros;
 public:
     Peer(std::string addr, std::string port);
     ~Peer();
