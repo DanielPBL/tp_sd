@@ -1,7 +1,7 @@
 
-# Trabalho Prático 2: Serviço P2P #
+# Trabalho Prático 3: Detecção de Falhas #
 
-Implementação de um serviço P2P estruturado.
+Implementação de um serviço P2P estruturado, com detecção de falhas.
 
 ## Compilação ##
 
@@ -25,6 +25,7 @@ peer.out IP PORTA
 * **STORE(<K,"V">)**: armazena a tupla <K,V> no peer
 * **FIND(K)**: busca a tupla identificada por K na rede
 * **LIST**: lista os peers vizinhos e as tuplas armazenadas neste peer
+* **MEMBERS**: lista todos os peers filiados ao grupo
 * **HELP**: exibe o texto de ajuda
 * **QUIT**: encerra a aplicação
 
