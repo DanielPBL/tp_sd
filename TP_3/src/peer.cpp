@@ -19,7 +19,9 @@
 
 #define BUF_SIZE 500
 #define BACKLOG 10
-#define TIMEOUT 300
+#define TIMEOUT 5.0
+#define HB_TIMEOUT 3.0
+#define HB_INTERVAL 1
 #define MAXNODES 1024
 
 using namespace std;
@@ -65,6 +67,10 @@ Peer::Peer(string addr, string port) {
     this->membros[this->id].id = this->id;
     this->membros[this->id].ip = this->ip;
     this->membros[this->id].porta = this->porta;
+
+    // Seta as informações de HeartBeat para o peer anterior
+    this->seq = 1;
+    this->setHeartbeat(this->prev);
 
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;
@@ -145,6 +151,13 @@ Vizinho Peer::getPrev() const {
     return this->prev;
 }
 
+/** Método getter da estrutura Heartbeat (detecção de erros)
+* @return Heartbeat
+*/
+Heartbeat Peer::getHearbeat() const {
+    return this->heartbeat;
+}
+
 /** Destrutor, fecha o socket do servidor */
 Peer::~Peer() {
     close(this->sockfd);
@@ -156,6 +169,10 @@ void Peer::start() {
 
     if (pthread_create(&t_id, NULL, Peer::serve, this) != 0) {
         throw "Erro ao criar thread do servidor";
+    }
+
+    if (pthread_create(&t_id, NULL, Peer::deteccao, this) != 0) {
+        throw "Erro ao criar thread de detecção de falhas";
     }
 }
 
@@ -208,13 +225,13 @@ int Peer::pconnect(string addr, string port) {
     for(p = servinfo; p != NULL; p = p->ai_next) {
         if ((connfd = socket(p->ai_family, p->ai_socktype,
                 p->ai_protocol)) == -1) {
-            perror("Erro ao criar socket");
+            //perror("Erro ao criar socket");
             continue;
         }
 
         if (connect(connfd, p->ai_addr, p->ai_addrlen) == -1) {
             close(connfd);
-            perror("Erro ao conectar no servidor");
+            //perror("Erro ao conectar no servidor");
             continue;
         }
 
@@ -350,7 +367,7 @@ void Peer::processa(Message *msg) {
             break;
         // Mensagem para a sincronização das listas de membros
         case Message::MSG_SYNC: {
-            /*unsigned int memberId, msgPId = Peer::hash(msg->getAddr() + ":" + msg->getPort());
+            unsigned int memberId, msgPId = Peer::hash(msg->getAddr() + ":" + msg->getPort());
             EnterCmd *enter;
             list<Comando*> enterCmds = this->parser.parseEnters(msg->getText());
             string members;
@@ -374,7 +391,7 @@ void Peer::processa(Message *msg) {
                 this->pconnect(this->next);
                 this->psend(this->next.sockfd, msg);
                 close(this->next.sockfd);
-            }*/
+            }
         }
             break;
         // Requisição de busca
@@ -495,6 +512,8 @@ void Peer::processa(Message *msg) {
                         this->next.id = Peer::hash(this->next.ip + ":" + this->next.porta);
                         this->prev.id = Peer::hash(this->prev.ip + ":" + this->prev.porta);
 
+                        this->setHeartbeat(this->prev);
+
                         // Seta a requisição como atendida
                         this->reqs[msg->getToId()]->done = true;
 
@@ -539,6 +558,15 @@ void Peer::processa(Message *msg) {
                         this->reqs[msg->getToId()]->done = true;
                     }
                         break;
+                    // Resposta a uma requisição PING
+                    case Message::MSG_PING:
+                        // Seta a requisição como atendida
+                        if (msg->getText() == "PONG") {
+                            this->reqs[msg->getToId()]->done = true;
+                        } else {
+                            throw "Erro inesperado. WTH!";
+                        }
+                        break;
                     default:
                         throw "Resposta não entendida";
                 }
@@ -574,6 +602,7 @@ void Peer::processa(Message *msg) {
             this->prev.ip = msg->getAddr();
             this->prev.porta = msg->getPort();
             this->prev.id = Peer::hash(this->prev.ip + ":" + this->prev.porta);
+            this->setHeartbeat(this->prev);
 
             // Seta flags
             zero_entre = (prev_id > this->id) || (prev_id == this->id && this->prev.id < this->id); // Inserção não usual
@@ -603,6 +632,42 @@ void Peer::processa(Message *msg) {
                 close(this->prev.sockfd);
 
                 delete store;
+            }
+        }
+            break;
+        // Protocolo de reconstrução da rede verificando se o peer está funcionando
+        case Message::MSG_PING: {
+            Message *resp;
+            Vizinho peer = {
+                .ip = msg->getAddr(),
+                .porta = msg->getPort(),
+                .sockfd = 0,
+                .id = Peer::hash(msg->getAddr() + ":" + msg->getPort())
+            };
+
+            // Responde com uma mensage de PONG
+            resp = this->msgFct.newMessage();
+            resp->setAddr(this->ip);
+            resp->setPort(this->porta);
+            resp->setType(Message::MSG_RESP);
+            resp->setToId(msg->getId());
+            resp->setText("PONG");
+
+            this->pconnect(peer);
+            // Envia a mensagem para o peer que mandou o PING
+            this->psend(peer.sockfd, resp);
+            close(peer.sockfd);
+        }
+            break;
+        // Protocolo de detecção de falhas. Nó vizinho avisando que está vivo.
+        case Message::MSG_HEARTB: {
+            unsigned long n_seq = strtoul(msg->getText().c_str(), NULL, 10);
+            // Se recebi o heartbear de quem espero, e número de seq aumentou
+            if (Peer::hash(msg->getAddr() + ":" + msg->getPort()) == this->heartbeat.peer.id
+                && n_seq > this->heartbeat.seq) {
+                // Atualiza o número de sequência e o tempo local
+                this->heartbeat.seq = n_seq;
+                this->heartbeat.t = clock();
             }
         }
             break;
@@ -638,6 +703,112 @@ void* Peer::serve(void *arg) {
     pthread_exit(NULL);
 }
 
+void Peer::setHeartbeat(Vizinho peer) {
+    this->heartbeat.peer = peer;
+    this->heartbeat.seq = 0;
+    this->heartbeat.t = clock();
+}
+
+/** Método estático auxiliar para a criação da PThread que envia heartbeats
+* @param arg void* - Ponteiro para o objeto da classe Peer
+*/
+void* Peer::deteccao(void *arq) {
+    Peer *peer = (Peer*) arq;
+    float t_listen, t_send;
+    clock_t l_send;
+
+    l_send = (clock() - (clock_t) HB_INTERVAL * CLOCKS_PER_SEC) - CLOCKS_PER_SEC;
+    while (true) {
+        t_listen = ((float) (clock() - peer->heartbeat.t)) / CLOCKS_PER_SEC;
+        t_send = ((float) (clock() - l_send)) / CLOCKS_PER_SEC;
+        // Verifica se recebeu um heartbeat a menos de HB_TIMEOUT segundos
+        if (t_listen > HB_TIMEOUT) {
+            // Falha detectada. Recostruir anel e propagar a informação
+            cout << "Falha detectada" << endl;
+            peer->reconstruir();
+        }
+
+        // Envia heartbeat para o vizinho a cada HB_INTERVAL segundos
+        if (t_send > HB_INTERVAL) {
+            peer->sendHearbeat();
+            l_send = clock();
+        }
+    }
+
+    pthread_exit(NULL);
+}
+
+void Peer::reconstruir() {
+    // TODO: Varrer os memberos na sequência do anel até encontrar um vivo e
+    //       reconstruir o anel (atualizar vizinhos).
+    return;
+}
+
+void Peer::sendHearbeat() {
+    try {
+        Message *msg = this->msgFct.newMessage();
+        msg->setAddr(this->ip);
+        msg->setPort(this->porta);
+        msg->setType(Message::MSG_HEARTB);
+        msg->setText(SSTR(this->seq));
+
+        this->seq++;
+        this->pconnect(this->next);
+        this->psend(this->next.sockfd, msg);
+        close(this->next.sockfd);
+    } catch(...) {
+        //Captura qualquer exceção. Espera que o protocolo de reconstrução do anel corrija o problema
+        cerr << "Aguardando reconstrução do anel..." << endl;
+    }
+}
+
+unsigned int Peer::getNext(unsigned int p_id) {
+    return 0;
+}
+
+bool Peer::estaVivo(Vizinho peer) {
+    Message *msg = this->msgFct.newMessage();
+    Requisicao *req = new Requisicao;
+    int connfd;
+    bool ret;
+
+    req->done = false;
+    req->msg = msg;
+    this->reqs[msg->getId()] = req;
+
+    msg->setAddr(this->ip);
+    msg->setPort(this->porta);
+    msg->setType(Message::MSG_PING);
+
+    // Envia uma mensagem de PING para o peer informado
+    try {
+        connfd = this->pconnect(peer.ip, peer.porta);
+        this->psend(connfd, msg);
+        close(connfd);
+
+        // Espera TIMEOUT segundos ou até receber a resposta
+        req->t = clock();
+        float t = ((float) (clock() - req->t)) / CLOCKS_PER_SEC;
+        while (t < TIMEOUT && !req->done) {
+            t = ((float) (clock() - req->t)) / CLOCKS_PER_SEC;
+        }
+
+        if (!req->done) {
+            ret = false;
+        } else {
+            ret = true;
+        }
+    } catch (...) {
+        ret = false;
+    }
+    // Exclui a requisição
+    this->reqs.erase(msg->getId());
+    delete req;
+    delete msg;
+
+    return ret;
+}
+
 /** Método que interpreta os comandos do cliente
 * @param cmd string - Comando informado na linha de comandos
 */
@@ -667,9 +838,9 @@ void Peer::parse(string cmd) {
 
             // Espera TIMEOUT segundos ou até receber a resposta
             req->t = clock();
-            clock_t t = (clock() - req->t) / CLOCKS_PER_SEC;
+            float t = ((float) (clock() - req->t)) / CLOCKS_PER_SEC;
             while (t < TIMEOUT && !req->done) {
-                t = (clock() - req->t) / CLOCKS_PER_SEC;
+                t = ((float) (clock() - req->t)) / CLOCKS_PER_SEC;
             }
 
             if (!req->done) {
@@ -707,9 +878,9 @@ void Peer::parse(string cmd) {
 
             // Espera TIMEOUT segundos ou até receber a resposta
             req->t = clock();
-            clock_t t = (clock() - req->t) / CLOCKS_PER_SEC;
+            float t = ((float) (clock() - req->t)) / CLOCKS_PER_SEC;
             while (t < TIMEOUT && !req->done) {
-                t = (clock() - req->t) / CLOCKS_PER_SEC;
+                t = ((float) (clock() - req->t)) / CLOCKS_PER_SEC;
             }
 
             if (!req->done) {
@@ -765,6 +936,7 @@ void Peer::parse(string cmd) {
             break;
         // Comando para encerrar a aplicação. QUIT
         case Comando::CMD_QUIT:
+            // TODO: Informar saída e repassar chaves armazenadas
             // Encerra a aplicação
             close(this->sockfd);
             cout << "Adeus!" << endl;

@@ -29,6 +29,12 @@ typedef struct REQUISICAO {
     Message *msg;
 } Requisicao;
 
+typedef struct HEARTBEAT {
+    Vizinho peer;
+    unsigned long seq;
+    clock_t t;
+} Heartbeat;
+
 class Peer {
 private:
     Parser parser;
@@ -40,7 +46,15 @@ private:
     Vizinho next, prev;
     std::map<unsigned int, std::string> tuplas;
     std::map<unsigned int, Requisicao*> reqs;
+    // Detecção de Falhas
+    unsigned long seq;
     std::map<unsigned int, Vizinho> membros;
+    Heartbeat heartbeat;
+
+    void setHeartbeat(Vizinho peer);
+    void sendHearbeat();
+    unsigned int getNext(unsigned int p_id);
+    bool estaVivo(Vizinho peer);
 public:
     Peer(std::string addr, std::string port);
     ~Peer();
@@ -53,16 +67,19 @@ public:
     Message *receive(int connfd);
     void parse(std::string cmd);
     void processa(Message *msg);
+    void reconstruir();
 
     unsigned long getId() const;
     std::string getIp() const;
     std::string getPorta() const;
     Vizinho getNext() const;
     Vizinho getPrev() const;
+    Heartbeat getHearbeat() const;
 
     static unsigned long hash(const std::string &s);
     static void* processa(void *con);
     static void* serve(void *arg);
+    static void* deteccao(void *arq);
 };
 
 #endif
