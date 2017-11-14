@@ -36,6 +36,8 @@ typedef struct HEARTBEAT {
 } Heartbeat;
 
 class Peer {
+public:
+    enum Direcao { PREV, NEXT };
 private:
     Parser parser;
     MessageFactory msgFct;
@@ -53,8 +55,11 @@ private:
 
     void setHeartbeat(Vizinho peer);
     void sendHearbeat();
-    unsigned int getNext(unsigned int p_id);
-    bool estaVivo(Vizinho peer);
+    Vizinho findNext(unsigned int p_id);
+    Vizinho findPrev(unsigned int p_id);
+    Vizinho findPeer(Direcao d);
+    bool estaVivo(const Vizinho peer);
+    void reconstruir(Direcao d);
 public:
     Peer(std::string addr, std::string port);
     ~Peer();
@@ -67,7 +72,6 @@ public:
     Message *receive(int connfd);
     void parse(std::string cmd);
     void processa(Message *msg);
-    void reconstruir();
 
     unsigned long getId() const;
     std::string getIp() const;
