@@ -24,8 +24,9 @@ peer.out IP PORTA
 * **ENTER "IP" PORTA**: entra na rede P2P do peer informado
 * **STORE(<K,"V">)**: armazena a tupla <K,V> no peer
 * **FIND(K)**: busca a tupla identificada por K na rede
-* **LIST**: lista os peers vizinhos e as tuplas armazenadas neste peer
+* **LIST**: lista as tuplas armazenadas neste peer
 * **MEMBERS**: lista todos os peers filiados ao grupo
+* **INFO**: exibe informações de controle do peer
 * **HELP**: exibe o texto de ajuda
 * **QUIT**: encerra a aplicação
 

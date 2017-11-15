@@ -85,6 +85,9 @@ Comando* AnalisadorSintatico::procComando() {
 	case MEMBERS:
 		cmd = this->procMembers();
 		break;
+	case INFO:
+		cmd = this->procInfo();
+		break;
 	default:
 		cmd = new Comando(Comando::CMD_NULL);
 		this->lancaExcessao();
@@ -155,6 +158,12 @@ Comando* AnalisadorSintatico::procMembers() {
 	this->matchToken(MEMBERS);
 
 	return new Comando(Comando::CMD_MEMBERS);
+}
+
+Comando* AnalisadorSintatico::procInfo() {
+	this->matchToken(INFO);
+
+	return new Comando(Comando::CMD_INFO);
 }
 
 HelpCmd* AnalisadorSintatico::procHelp() {

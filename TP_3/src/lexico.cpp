@@ -73,6 +73,7 @@ void AnalisadorLexico::criarTabelaSimbolos() {
 	this->tabelaSimbolos["enter"]   = ENTER;
 	this->tabelaSimbolos["list"]    = LIST;
 	this->tabelaSimbolos["members"] = MEMBERS;
+	this->tabelaSimbolos["info"]    = INFO;
 }
 
 void AnalisadorLexico::ungetChar() {

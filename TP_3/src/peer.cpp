@@ -19,9 +19,9 @@
 
 #define BUF_SIZE 500
 #define BACKLOG 10
-#define TIMEOUT 5.0
+#define TIMEOUT 15.0
 #define HB_TIMEOUT 3.0
-#define HB_INTERVAL 1
+#define HB_INTERVAL 1.0
 #define MAXNODES 1024
 
 using namespace std;
@@ -168,14 +168,10 @@ void Peer::start() {
     pthread_t t_id;
 
     if (pthread_create(&t_id, NULL, Peer::serve, this) != 0) {
-        //DEBUG
-        cout << "Erro ao criar thread do servidor" << endl;
         throw "Erro ao criar thread do servidor";
     }
 
     if (pthread_create(&t_id, NULL, Peer::deteccao, this) != 0) {
-        //DEBUG
-        cout << "Erro ao criar thread de detecção de falhas" << endl;
         throw "Erro ao criar thread de detecção de falhas";
     }
 }
@@ -196,8 +192,6 @@ void Peer::serve() {
         connfd = accept(this->sockfd, (struct sockaddr *) &their_addr, &sin_size);
 
         if (connfd == -1) {
-            //DEBUG
-            cout << "Erro ao aceitar conexão" << endl;
             throw "Erro ao aceitar conexão";
         }
 
@@ -205,8 +199,6 @@ void Peer::serve() {
         con->connfd = connfd;
         con->self = this;
         if (pthread_create(&thread, NULL, Peer::processa, con) != 0) {
-            //DEBUG
-            cout << "Erro ao criar thread" << endl;
             throw "Erro ao criar thread";
         }
     }
@@ -227,8 +219,6 @@ int Peer::pconnect(string addr, string port) {
     hints.ai_socktype = SOCK_STREAM;
 
     if ((rv = getaddrinfo(addr.c_str(), port.c_str(), &hints, &servinfo)) != 0) {
-        //DEBUG
-        cout << gai_strerror(rv) << endl;
         throw gai_strerror(rv);
     }
 
@@ -251,8 +241,6 @@ int Peer::pconnect(string addr, string port) {
     freeaddrinfo(servinfo);
 
     if (p == NULL) {
-        //DEBUG
-        cout << "Falha ao conectar" << endl;
         throw "Falha ao conectar";
     }
 
@@ -275,8 +263,6 @@ void Peer::psend(int connfd, Message *msg) {
 
     // Envia uma mensagem pelo socket TCP
     if (send(connfd, str.c_str(), str.size(), 0) == -1) {
-        //DEBUG
-        cout << "Erro ao enviar mensagem" << endl;
         throw "Erro ao enviar mensagem";
     }
 }
@@ -291,8 +277,6 @@ Message* Peer::receive(int connfd) {
     int numBytes, size;
 
     if ((numBytes = recv(connfd, buf, BUF_SIZE - 1, 0)) == -1) {
-        //DEBUG
-        cout << "Erro ao receber mensagem" << endl;
         throw "Erro ao receber mensagem";
     }
     buf[numBytes] = '\0';
@@ -305,8 +289,6 @@ Message* Peer::receive(int connfd) {
     size = aux->getText().size();
     while (aux->getSize() > size) {
         if ((numBytes = recv(connfd, buf, BUF_SIZE - 1, 0)) == -1) {
-            //DEBUG
-            cout << "Erro ao receber mensagem" << endl;
             throw "Erro ao receber mensagem";
         }
         buf[numBytes] = '\0';
@@ -582,19 +564,13 @@ void Peer::processa(Message *msg) {
                         if (msg->getText() == "PONG") {
                             this->reqs[msg->getToId()]->done = true;
                         } else {
-                            //DEBUG
-                            cout << "Erro inesperado. WTH!" << endl;
                             throw "Erro inesperado. WTH!";
                         }
                         break;
                     default:
-                        //DEBUG
-                        cout << "Resposta não entendida" << endl;
                         throw "Resposta não entendida";
                 }
             } else {
-                //DEBUG
-                cout << "Resposta não esperada" << endl;
                 throw "Resposta não esperada";
             }
             break;
@@ -609,8 +585,6 @@ void Peer::processa(Message *msg) {
                     this->reqs[msg->getToId()]->done = true;
                 }
             } else {
-                //DEBUG
-                cout << "Mensagem de erro não esperada" << endl;
                 throw "Mensagem de erro não esperada";
             }
             break;
@@ -688,7 +662,7 @@ void Peer::processa(Message *msg) {
         // Protocolo de detecção de falhas. Nó vizinho avisando que está vivo.
         case Message::MSG_HEARTB: {
             unsigned long n_seq = strtoul(msg->getText().c_str(), NULL, 10);
-            // Se recebi o heartbear de quem espero, e número de seq aumentou
+            // Se recebi o heartbear de quem espero, e o número de seq aumentou
             if (Peer::hash(msg->getAddr() + ":" + msg->getPort()) == this->heartbeat.peer.id
                 && n_seq > this->heartbeat.seq) {
                 // Atualiza o número de sequência e o tempo local
@@ -698,13 +672,27 @@ void Peer::processa(Message *msg) {
         }
             break;
         case Message::MSG_DIED: {
-            cout << msg->toString() << endl;
+            unsigned int memberId, msgPId = Peer::hash(msg->getAddr() + ":" + msg->getPort());
+            EnterCmd *enter;
+            list<Comando*> enterCmds = this->parser.parseEnters(msg->getText());
+
+            for (list<Comando*>::iterator it = enterCmds.begin(); it != enterCmds.end(); ++it) {
+                enter = (EnterCmd*) *it;
+                memberId = Peer::hash(enter->ip + ":" + enter->porta);
+                // Exclui os membros que pararam da lista
+                this->membros.erase(memberId);
+            }
+
+            // Se a mensagem for do peer atual, é sinal que a mensagem deu a volta no
+            // anel e sua propagração deve ser interrompida
+            if (this->id != msgPId) {
+                this->pconnect(this->next);
+                this->psend(this->next.sockfd, msg);
+                close(this->next.sockfd);
+            }
         }
             break;
         default:
-            //DEBUG
-            cout << msg->toString() << endl;
-            cout << "Mensagem sem tratamento" << endl;
             throw "Mensagem sem tratamento";
     }
 }
@@ -757,8 +745,6 @@ void* Peer::deteccao(void *arq) {
         // Verifica se recebeu um heartbeat a menos de HB_TIMEOUT segundos
         if (t_listen > HB_TIMEOUT) {
             // Falha detectada. Recostruir anel e propagar a informação
-            //DEBUG
-            cout << "Falha ao receber HEARTBEAT" << endl;
             peer->reconstruir(Peer::PREV);
         }
 
@@ -773,8 +759,6 @@ void* Peer::deteccao(void *arq) {
 }
 
 void Peer::reconstruir(Direcao d) {
-    //DEBUG
-    cout << "Reconstrução iniciada." << endl;
     // Prepara mensagem de propagação da informação que o peer vizinho parou.
     Message *msg = this->msgFct.newMessage();
     msg->setAddr(this->ip);
@@ -782,34 +766,23 @@ void Peer::reconstruir(Direcao d) {
     msg->setType(Message::MSG_DIED);
     switch (d) {
         case Peer::PREV:
-            //DEBUG
-            cout << "Sentido ANTI-HORÁRIO (prev)" << endl;
             msg->setText("ENTER \"" + this->prev.ip + "\" " + this->prev.porta + "\n");
             break;
         case Peer::NEXT:
-            //DEBUG
-            cout << "Sentido HORÁRIO (next)" << endl;
             msg->setText("ENTER \"" + this->next.ip + "\" " + this->next.porta + "\n");
             break;
     }
 
     Vizinho novo = this->findPeer(d);
     while (!this->estaVivo(novo)) {
-        //DEBUG
-        cout << novo.id << " está parado." << endl;
-        msg->setText(msg->getText() + "ENTER \"" + novo.ip + "\" " + novo.ip + "\n");
+        msg->setText(msg->getText() + "ENTER \"" + novo.ip + "\" " + novo.porta + "\n");
         switch (d) {
             case Peer::PREV:
                 novo = this->findPrev(this->prev.id);
             case Peer::NEXT:
                 novo = this->findNext(this->next.id);
         }
-        //DEBUG
-        char pause;
-        cin >> pause;
     }
-    //DEBUG
-    cout << novo.id << " está vivo." << endl;
 
     // Peer substituto encontrado. Reconstruir o anel.
     switch (d) {
@@ -825,13 +798,10 @@ void Peer::reconstruir(Direcao d) {
     // Propagar a informação pelo anel
     try {
         this->pconnect(this->next);
-        cout << msg->toString();
         this->psend(this->next.sockfd, msg);
         close(this->next.sockfd);
     } catch(...) {
         // O peer parou durante a reconstrução do anel
-        // DEBUG
-        cout << "Falha ao reconstruir. Tentando novamente" << endl;
         this->reconstruir(Peer::NEXT);
     }
 
@@ -852,8 +822,6 @@ void Peer::sendHearbeat() {
         close(this->next.sockfd);
     } catch(...) {
         // Falha detectada. Encontrar o próximo peer e reconstruir o anel
-        //DEBUG
-        cout << "Falha ao enviar HEARTBEAT" << endl;
         this->reconstruir(Peer::NEXT);
     }
 
@@ -874,12 +842,8 @@ Vizinho Peer::findPeer(Direcao d) {
 Vizinho Peer::findNext(unsigned int p_id) {
     Vizinho p_next;
     map<unsigned int, Vizinho>::iterator it;
-    //DEBUG
-    cout << "Encontrando próximo a " << p_id << endl;
 
-    if (this->membros.size() <= 2) {
-        //DEBUG
-        cout << "Lista com somente um nó" << endl;
+    if (this->membros.size() <= 1) {
         p_next = (Vizinho) {
             .ip = this->ip,
             .porta = this->porta,
@@ -888,22 +852,18 @@ Vizinho Peer::findNext(unsigned int p_id) {
         };
     } else {
         // Extremo
-        if (this->membros.end()->second.id == p_id) {
-            //DEBUG
-            cout << "Extremo" << endl;
+        if (p_id >= (++this->membros.end())->second.id) {
             p_next = this->membros.begin()->second;
         } else {
-            //DEBUG
-            cout << "Varrendo" << endl;
             it = this->membros.begin();
-            while (it->second.id < p_id) {
+            while (it->second.id <= p_id) {
                 ++it;
             }
             p_next = it->second;
         }
     }
-    //DEBUG
-    cout << "Próximo: " << p_next.id << endl;
+
+    this->membros.erase(p_id);
 
     return p_next;
 }
@@ -911,11 +871,8 @@ Vizinho Peer::findNext(unsigned int p_id) {
 Vizinho Peer::findPrev(unsigned int p_id) {
     Vizinho p_prev;
     map<unsigned int, Vizinho>::iterator it;
-    //DEBUG
-    cout << "Encontrando anterior a " << p_id << endl;
-    if (this->membros.size() <= 2) {
-        //DEBUG
-        cout << "Lista com somente um nó" << endl;
+
+    if (this->membros.size() <= 1) {
         p_prev = (Vizinho) {
             .ip = this->ip,
             .porta = this->porta,
@@ -924,22 +881,19 @@ Vizinho Peer::findPrev(unsigned int p_id) {
         };
     } else {
         // Extremo
-        if (this->membros.begin()->second.id == p_id) {
-            //DEBUG
-            cout << "Extremo" << endl;
-            p_prev = this->membros.end()->second;
+        if (p_id <= this->membros.begin()->second.id) {
+            p_prev = (++this->membros.end())->second;
         } else {
-            //DEBUG
-            cout << "Varrendo" << endl;
             it = this->membros.end();
-            while (it->second.id > p_id) {
+            while (it->second.id >= p_id) {
                 --it;
             }
             p_prev = it->second;
         }
     }
-    //DEBUG
-    cout << "Anterior: " << p_prev.id << endl;
+
+    this->membros.erase(p_id);
+
     return p_prev;
 }
 
@@ -959,9 +913,6 @@ bool Peer::estaVivo(const Vizinho peer) {
 
     // Envia uma mensagem de PING para o peer informado
     try {
-        // DEBUG
-        cout << "Verificando se " << peer.id << " está vivo." << endl;
-        cout << msg->toString() << endl;
         connfd = this->pconnect(peer.ip, peer.porta);
         this->psend(connfd, msg);
         close(connfd);
@@ -1078,10 +1029,6 @@ void Peer::parse(string cmd) {
             break;
         // Comando para listar os vizinhos e as truplas. LIST
         case Comando::CMD_LIST:
-            cout << "Vizinhos: " << endl;
-            cout << "Anterior - " << this->prev.ip << ":" << this->prev.porta  << " (" << this->prev.id << ")" << endl;
-            cout << "Próximo - " << this->next.ip << ":" << this->next.porta  << " (" << this->next.id << ")" << endl;
-            cout << endl;
             cout << "Tuplas Armazenadas:" << endl;
             for (map<unsigned int, string>::iterator it = this->tuplas.begin(); it != this->tuplas.end(); ++it) {
                 cout << "<" << it->first << ", \"" << it->second << "\">" << endl;
@@ -1113,6 +1060,21 @@ void Peer::parse(string cmd) {
                 cout << it->second.ip << ":" << it->second.porta << " (" << it->first << ")" << endl;
             }
         }
+            break;
+        // Comando para exibir informações sobre o peer
+        case Comando::CMD_INFO:
+            cout << "ID: " << this->id << endl;
+            cout << "IP: " << this->ip << endl;
+            cout << "Porta: " << this->porta << endl;
+            cout << endl;
+            cout << "Vizinhos: " << endl;
+            cout << "Anterior - " << this->prev.ip << ":" << this->prev.porta  << " (" << this->prev.id << ")" << endl;
+            cout << "Próximo - " << this->next.ip << ":" << this->next.porta  << " (" << this->next.id << ")" << endl;
+            cout << endl;
+            cout << "Heartbeat:" << endl;
+            cout << "Seq " << this->heartbeat.seq << " de ";
+            cout << this->heartbeat.peer.ip << ":" << this->heartbeat.peer.porta  << " (" << this->heartbeat.peer.id << ")";
+            cout << " recebido a " << ((float) (clock() - this->heartbeat.t)) / CLOCKS_PER_SEC << " segundos." << endl;
             break;
         // Comando para encerrar a aplicação. QUIT
         case Comando::CMD_QUIT:

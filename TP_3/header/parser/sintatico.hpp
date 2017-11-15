@@ -35,6 +35,7 @@ private:
 	Comando* procList();
 	Comando* procQuit();
 	Comando* procMembers();
+	Comando* procInfo();
 	HelpCmd* procHelp();
 	std::pair<int, std::string> procPair();
 	int procChave();

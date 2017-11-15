@@ -22,6 +22,7 @@
 #define ENTER                   12
 #define LIST                    13
 #define MEMBERS                 14
+#define INFO                    15
 
 typedef struct LEXEMA {
 	std::string token;

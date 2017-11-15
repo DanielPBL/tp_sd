@@ -11,7 +11,8 @@ public:
         CMD_ENTER,
         CMD_QUIT,
         CMD_HELP,
-        CMD_MEMBERS
+        CMD_MEMBERS,
+        CMD_INFO
     };
     Type tipo;
 
