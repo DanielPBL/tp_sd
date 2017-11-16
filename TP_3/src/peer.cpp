@@ -454,12 +454,11 @@ void Peer::processa(Message *msg) {
             StoreCmd *store;
             list<Comando*> storeCmds;
             list<Comando*>::iterator it;
-            bool zero_entre;
+            bool zero_entre = (this->prev.id > this->id);
 
             storeCmds = this->parser.parseStores(msg->getText());
             for (it = storeCmds.begin(); it != storeCmds.end(); ++it) {
                 store = (StoreCmd*) *it;
-                zero_entre = (this->prev.id > this->id);
                 // Verifica se a tupla pertence ao peer
                 if ((store->tupla.first > this->prev.id && store->tupla.first <= this->id) // Caso usual
                     || (this->next.id == this->id) // Rede com somente um peer
@@ -739,6 +738,37 @@ void Peer::processa(Message *msg) {
                 this->psend(this->next.sockfd, msg);
                 close(this->next.sockfd);
             }
+
+            // Replico tudo que é meu para garantir que ainda existem réplicas aṕos a falha
+            string repl = "";
+            bool zero_entre = (this->prev.id > this->id);
+
+            for (map<unsigned int, string>::iterator it = this->tuplas.begin(); it != this->tuplas.end(); ++it) {
+                // Verifica se a tupla pertence ao peer
+                if ((it->first > this->prev.id && it->first <= this->id) // Caso usual
+                    || (this->next.id == this->id) // Rede com somente um peer
+                    || (zero_entre && ((it->first > this->prev.id && it->first > this->id)
+                    || it->first <= this->id))) {
+                    // Chave é responsabilidade do peer atual. Replica
+                    repl += "STORE(<" + SSTR(it->first) + ",\"" + it->second + "\">)\n";
+                }
+            }
+
+            // Pede para os vizihos replicarem as chaves
+            if (repl.length() > 0) {
+                Message *repassa = this->msgFct.newMessage();
+                repassa->setAddr(this->ip);
+                repassa->setPort(this->porta);
+                repassa->setType(Message::MSG_REPL);
+                repassa->setText(repl);
+                repassa->setToId(MAX_REPL);
+
+                // Envia requisições de REPLICAÇÃO para o próximo
+                this->pconnect(this->next);
+                this->psend(this->next.sockfd, repassa);
+                close(this->next.sockfd);
+                delete repassa;
+            }
         }
             break;
         default:
@@ -785,6 +815,10 @@ void* Peer::serve(void *arg) {
     pthread_exit(NULL);
 }
 
+/** Método setter das informações do peer que envia as informações de heartbeat
+*   (informações do peer, número de sequencia e tempo local do recebimento)
+* @param peer Vizinho - Estrutura que armazena as informações do peer
+*/
 void Peer::setHeartbeat(Vizinho peer) {
     this->heartbeat.peer = peer;
     this->heartbeat.seq = 0;
@@ -819,6 +853,9 @@ void* Peer::deteccao(void *arq) {
     pthread_exit(NULL);
 }
 
+/** Método que a realiza a rescontrução do anel após uma falha ser detectada
+* @param d Direcao - Indica se o peer anterior ou próximo que falhou
+*/
 void Peer::reconstruir(Direcao d) {
     // Prepara mensagem de propagação da informação que o peer vizinho parou.
     Message *msg = this->msgFct.newMessage();
@@ -873,6 +910,8 @@ void Peer::reconstruir(Direcao d) {
     delete msg;
 }
 
+/** Método que é executado pela thread de detecção de erros que envia heartbeats
+*/
 void Peer::sendHearbeat() {
     Message *msg = this->msgFct.newMessage();
     msg->setAddr(this->ip);
@@ -893,6 +932,10 @@ void Peer::sendHearbeat() {
     delete msg;
 }
 
+/** Encontra o peer vizinho ativo na direção informada
+* @param d Direcao - Indica a direção em que a busca deve ser realizada
+* @return Vizinho
+*/
 Vizinho Peer::findPeer(Direcao d) {
     switch (d) {
         case Peer::PREV:
@@ -904,6 +947,10 @@ Vizinho Peer::findPeer(Direcao d) {
     return this->next;
 }
 
+/** Encontra o peer vizinho ativo que vem depois do peer informado
+* @param p_id unsigned int - peer a partir do qual a busca é iniciada
+* @return Vizinho
+*/
 Vizinho Peer::findNext(unsigned int p_id) {
     Vizinho p_next;
     map<unsigned int, Vizinho>::iterator it;
@@ -933,6 +980,10 @@ Vizinho Peer::findNext(unsigned int p_id) {
     return p_next;
 }
 
+/** Encontra o peer vizinho ativo que vem antes do peer informado
+* @param p_id unsigned int - peer a partir do qual a busca é iniciada
+* @return Vizinho
+*/
 Vizinho Peer::findPrev(unsigned int p_id) {
     Vizinho p_prev;
     map<unsigned int, Vizinho>::iterator it;
@@ -962,6 +1013,11 @@ Vizinho Peer::findPrev(unsigned int p_id) {
     return p_prev;
 }
 
+/** Método que envia uma mensagem de ping para o peer informado, verificando se
+*   este se encontra ativo
+* @param peer Vizinho - peer que se deseja saber se está ativo
+* @return bool - ativo ou não
+*/
 bool Peer::estaVivo(const Vizinho peer) {
     Message *msg = this->msgFct.newMessage();
     Requisicao *req = new Requisicao;
