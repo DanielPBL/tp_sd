@@ -23,7 +23,8 @@ public:
         MSG_ACK,
         MSG_HEARTB,
         MSG_SYNC,
-        MSG_DIED
+        MSG_DIED,
+        MSG_REPL
     };
 private:
     unsigned int id;

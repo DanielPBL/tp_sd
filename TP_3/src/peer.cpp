@@ -21,6 +21,7 @@
 #define BACKLOG 10
 #define TIMEOUT 15.0
 #define MAX_TRY 3
+#define MAX_REPL 2
 #define HB_TIMEOUT 3.0
 #define HB_INTERVAL 1.0
 #define MAXNODES 1024
@@ -379,6 +380,7 @@ void Peer::processa(Message *msg) {
                 this->membros[memberId].id = memberId;
                 this->membros[memberId].ip = enter->ip;
                 this->membros[memberId].porta = enter->porta;
+                delete enter;
             }
 
             // Se a mensagem for do peer atual, é sinal que a mensagem deu a volta no
@@ -442,11 +444,13 @@ void Peer::processa(Message *msg) {
             // Envia a resposta
             this->psend(peer.sockfd, resp);
             close(peer.sockfd);
+            delete find;
         }
             break;
         // Requisição de armazenamento
         case Message::MSG_STORE: {
             string stores = "";
+            string repl = "";
             StoreCmd *store;
             list<Comando*> storeCmds;
             list<Comando*>::iterator it;
@@ -463,10 +467,13 @@ void Peer::processa(Message *msg) {
                     || store->tupla.first <= this->id))) {
                     // Chave é responsabilidade do peer atual. Armazena
                     this->tuplas.insert(store->tupla);
+                    repl += "STORE(<" + SSTR(store->tupla.first) + ",\"" + store->tupla.second + "\">)\n";
                 } else {
                     // Passa para o próximo chaves que não pertencem ao peer atual
                     stores += "STORE(<" + SSTR(store->tupla.first) + ",\"" + store->tupla.second + "\">)\n";
                 }
+
+                delete store;
             }
 
             // Se existe alguma chave que não pertence ao peer atual
@@ -482,6 +489,45 @@ void Peer::processa(Message *msg) {
                 this->psend(this->next.sockfd, repassa);
                 close(this->next.sockfd);
                 delete repassa;
+            }
+
+            // Pede para os vizihos replicarem as chaves
+            if (repl.length() > 0) {
+                Message *repassa = this->msgFct.newMessage();
+                repassa->setAddr(this->ip);
+                repassa->setPort(this->porta);
+                repassa->setType(Message::MSG_REPL);
+                repassa->setText(repl);
+                repassa->setToId(MAX_REPL);
+
+                // Envia requisições de REPLICAÇÃO para o próximo
+                this->pconnect(this->next);
+                this->psend(this->next.sockfd, repassa);
+                close(this->next.sockfd);
+                delete repassa;
+            }
+        }
+            break;
+        // Pedido de replicação.
+        case Message::MSG_REPL: {
+            StoreCmd *store;
+            list<Comando*> storeCmds;
+            list<Comando*>::iterator it;
+
+            storeCmds = this->parser.parseStores(msg->getText());
+            for (it = storeCmds.begin(); it != storeCmds.end(); ++it) {
+                store = (StoreCmd*) *it;
+                this->tuplas.insert(store->tupla);
+                delete store;
+            }
+
+            // Pede para os vizihos replicarem as chaves
+            if (msg->getToId() - 1 > 0) {
+                msg->setToId(msg->getToId() - 1);
+                // Repassa a requisição de REPLICAÇÃO para o próximo
+                this->pconnect(this->next);
+                this->psend(this->next.sockfd, msg);
+                close(this->next.sockfd);
             }
         }
             break;
@@ -557,6 +603,7 @@ void Peer::processa(Message *msg) {
 
                         // Seta a requisição como atendida
                         this->reqs[msg->getToId()]->done = true;
+                        delete store;
                     }
                         break;
                     // Resposta a uma requisição PING
@@ -682,6 +729,7 @@ void Peer::processa(Message *msg) {
                 memberId = Peer::hash(enter->ip + ":" + enter->porta);
                 // Exclui os membros que pararam da lista
                 this->membros.erase(memberId);
+                delete enter;
             }
 
             // Se a mensagem for do peer atual, é sinal que a mensagem deu a volta no
@@ -1099,7 +1147,6 @@ void Peer::parse(string cmd) {
             break;
         // Comando para encerrar a aplicação. QUIT
         case Comando::CMD_QUIT:
-            // TODO: Informar saída e repassar chaves armazenadas
             // Encerra a aplicação
             close(this->sockfd);
             cout << "Adeus!" << endl;

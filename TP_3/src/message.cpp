@@ -35,6 +35,7 @@ Message::Message(string msg) {
 
     switch (this->type) {
         case Message::MSG_RESP:
+        case Message::MSG_REPL:
         case Message::MSG_ERROR:
             getline(ss, str);
             this->toId = atoi(str.substr(4).c_str());
@@ -145,6 +146,8 @@ string Message::TypeDesc(Message::Type type) {
             return "SYNC";
         case Message::MSG_DIED:
             return "DIED";
+        case Message::MSG_REPL:
+            return "REPLICATE";
     }
 
     return "ERROR";
@@ -171,6 +174,8 @@ Message::Type Message::FindType(std::string type) {
         return Message::MSG_SYNC;
     } else if (type == "DIED") {
         return Message::MSG_DIED;
+    } else if (type == "REPLICATE") {
+        return Message::MSG_REPL;
     } else {
         return Message::MSG_ERROR;
     }
