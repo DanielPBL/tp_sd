@@ -20,6 +20,7 @@
 #define BUF_SIZE 500
 #define BACKLOG 10
 #define TIMEOUT 15.0
+#define MAX_TRY 3
 #define HB_TIMEOUT 3.0
 #define HB_INTERVAL 1.0
 #define MAXNODES 1024
@@ -705,9 +706,21 @@ void* Peer::processa(void *con) {
     Conexao *conexao = (Conexao*) con;
     Peer *p = (Peer*) conexao->self;
     Message *msg;
+    bool processada = false;
+    int tentativas = 0;
 
     msg = p->receive(conexao->connfd);
-    p->processa(msg);
+
+    while (tentativas < MAX_TRY && !processada) {
+        try {
+            p->processa(msg);
+            processada = true;
+        } catch (...) {
+            tentativas++;
+            sleep(HB_INTERVAL);
+        }
+    }
+
     close(conexao->connfd);
 
     delete conexao;
@@ -779,8 +792,12 @@ void Peer::reconstruir(Direcao d) {
         switch (d) {
             case Peer::PREV:
                 novo = this->findPrev(this->prev.id);
+                this->prev = novo;
+                break;
             case Peer::NEXT:
                 novo = this->findNext(this->next.id);
+                this->next = novo;
+                break;
         }
     }
 
@@ -962,23 +979,27 @@ void Peer::parse(string cmd) {
             msg->setPort(this->porta);
             msg->setType(Message::MSG_ENTER);
 
-            // Envia uma mensagem de ENTER para o peer informado
-            connfd = this->pconnect(enter->ip, enter->porta);
-            this->psend(connfd, msg);
-            close(connfd);
+            try {
+                // Envia uma mensagem de ENTER para o peer informado
+                connfd = this->pconnect(enter->ip, enter->porta);
+                this->psend(connfd, msg);
+                close(connfd);
 
-            // Espera TIMEOUT segundos ou até receber a resposta
-            req->t = clock();
-            float t = ((float) (clock() - req->t)) / CLOCKS_PER_SEC;
-            while (t < TIMEOUT && !req->done) {
-                t = ((float) (clock() - req->t)) / CLOCKS_PER_SEC;
-            }
+                // Espera TIMEOUT segundos ou até receber a resposta
+                req->t = clock();
+                float t = ((float) (clock() - req->t)) / CLOCKS_PER_SEC;
+                while (t < TIMEOUT && !req->done) {
+                    t = ((float) (clock() - req->t)) / CLOCKS_PER_SEC;
+                }
 
-            if (!req->done) {
-                cerr << "Tempo limite excedido." << endl;
-            } else {
-                t = clock() - req->t;
-                cout << "Requisição concluída em " << ((float) t) / CLOCKS_PER_SEC << " segundos." << endl;
+                if (!req->done) {
+                    cout << "Tempo limite excedido." << endl;
+                } else {
+                    t = clock() - req->t;
+                    cout << "Requisição concluída em " << ((float) t) / CLOCKS_PER_SEC << " segundos." << endl;
+                }
+            } catch (...) {
+                cout << "Não foi possível conectar ao peer informado." << endl;
             }
 
             // Exclui a requisição
@@ -1015,7 +1036,7 @@ void Peer::parse(string cmd) {
             }
 
             if (!req->done) {
-                cerr << "Tempo limite excedido." << endl;
+                cout << "Tempo limite excedido." << endl;
             } else {
                 t = clock() - req->t;
                 cout << "Requisição concluída em " << ((float) t) / CLOCKS_PER_SEC << " segundos." << endl;
