@@ -15,7 +15,6 @@ public:
     enum Type {
         MSG_ERROR,
         MSG_PING,
-        MSG_PONG,
         MSG_FIND,
         MSG_STORE,
         MSG_RESP,

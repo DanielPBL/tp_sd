@@ -52,6 +52,10 @@ private:
     unsigned long seq;
     std::map<unsigned int, Vizinho> membros;
     Heartbeat heartbeat;
+    // Taxa de perda de mensagens
+    int taxa_erro;
+    unsigned int falso_positivo;
+    unsigned int falha_detectadas;
 
     void setHeartbeat(Vizinho peer);
     void sendHearbeat();
@@ -61,7 +65,7 @@ private:
     bool estaVivo(const Vizinho peer);
     void reconstruir(Direcao d);
 public:
-    Peer(std::string addr, std::string port);
+    Peer(std::string addr, std::string port, int taxa);
     ~Peer();
 
     void start();
@@ -79,6 +83,7 @@ public:
     Vizinho getNext() const;
     Vizinho getPrev() const;
     Heartbeat getHearbeat() const;
+    int getTaxaErro() const;
 
     static unsigned long hash(const std::string &s);
     static void* processa(void *con);

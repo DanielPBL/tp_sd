@@ -128,8 +128,6 @@ string Message::TypeDesc(Message::Type type) {
             return "ERROR";
         case Message::MSG_PING:
             return "PING";
-        case Message::MSG_PONG:
-            return "PONG";
         case Message::MSG_FIND:
             return "FIND";
         case Message::MSG_STORE:
@@ -156,8 +154,6 @@ string Message::TypeDesc(Message::Type type) {
 Message::Type Message::FindType(std::string type) {
     if (type == "PING") {
         return Message::MSG_PING;
-    } else if (type == "PONG") {
-        return Message::MSG_PONG;
     } else if (type == "FIND") {
         return Message::MSG_FIND;
     } else if (type == "STORE") {

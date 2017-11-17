@@ -16,6 +16,7 @@
 #include <sstream>
 #include <pthread.h>
 #include <list>
+#include <iomanip>
 
 #define BUF_SIZE 500
 #define BACKLOG 10
@@ -46,8 +47,9 @@ unsigned long Peer::hash(const string &s) {
 /** Construtor da classe Peer
 * @param addr string - IP do peer
 * @param port string - PORTA do peer
+* @param taxa int - taxa de perda de mensagens
 */
-Peer::Peer(string addr, string port) {
+Peer::Peer(string addr, string port, int taxa) {
     struct addrinfo hints, *servinfo, *p;
     int yes = 1;
     int rv;
@@ -73,6 +75,10 @@ Peer::Peer(string addr, string port) {
     // Seta as informações de HeartBeat para o peer anterior
     this->seq = 1;
     this->setHeartbeat(this->prev);
+
+    this->taxa_erro = taxa;
+    this->falha_detectadas = 0;
+    this->falso_positivo = 0;
 
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;
@@ -158,6 +164,13 @@ Vizinho Peer::getPrev() const {
 */
 Heartbeat Peer::getHearbeat() const {
     return this->heartbeat;
+}
+
+/** Método getter da taxa de perda de mensagens
+* @return int
+*/
+int Peer::getTaxaErro() const {
+    return this->taxa_erro;
 }
 
 /** Destrutor, fecha o socket do servidor */
@@ -605,15 +618,6 @@ void Peer::processa(Message *msg) {
                         delete store;
                     }
                         break;
-                    // Resposta a uma requisição PING
-                    case Message::MSG_PING:
-                        // Seta a requisição como atendida
-                        if (msg->getText() == "PONG") {
-                            this->reqs[msg->getToId()]->done = true;
-                        } else {
-                            throw "Erro inesperado. WTH!";
-                        }
-                        break;
                     default:
                         throw "Resposta não entendida";
                 }
@@ -683,28 +687,8 @@ void Peer::processa(Message *msg) {
         }
             break;
         // Protocolo de reconstrução da rede verificando se o peer está funcionando
-        case Message::MSG_PING: {
-            Message *resp;
-            Vizinho peer = {
-                .ip = msg->getAddr(),
-                .porta = msg->getPort(),
-                .sockfd = -1,
-                .id = Peer::hash(msg->getAddr() + ":" + msg->getPort())
-            };
-
-            // Responde com uma mensage de PONG
-            resp = this->msgFct.newMessage();
-            resp->setAddr(this->ip);
-            resp->setPort(this->porta);
-            resp->setType(Message::MSG_RESP);
-            resp->setToId(msg->getId());
-            resp->setText("PONG");
-
-            this->pconnect(peer);
-            // Envia a mensagem para o peer que mandou o PING
-            this->psend(peer.sockfd, resp);
-            close(peer.sockfd);
-        }
+        case Message::MSG_PING:
+            // Não devo fazer nada.
             break;
         // Protocolo de detecção de falhas. Nó vizinho avisando que está vivo.
         case Message::MSG_HEARTB: {
@@ -789,13 +773,16 @@ void* Peer::processa(void *con) {
 
     msg = p->receive(conexao->connfd);
 
-    while (tentativas < MAX_TRY && !processada) {
-        try {
-            p->processa(msg);
-            processada = true;
-        } catch (...) {
-            tentativas++;
-            sleep(HB_INTERVAL);
+    // Simula perda de mensagens
+    if ((rand() % 100) > p->taxa_erro) {
+        while (tentativas < MAX_TRY && !processada) {
+            try {
+                p->processa(msg);
+                processada = true;
+            } catch (...) {
+                tentativas++;
+                sleep(HB_INTERVAL);
+            }
         }
     }
 
@@ -840,7 +827,14 @@ void* Peer::deteccao(void *arq) {
         // Verifica se recebeu um heartbeat a menos de HB_TIMEOUT segundos
         if (t_listen > HB_TIMEOUT) {
             // Falha detectada. Recostruir anel e propagar a informação
-            peer->reconstruir(Peer::PREV);
+            peer->falha_detectadas++;
+            // Verificar se é um falso positivo
+            if (peer->estaVivo(peer->getPrev())) {
+                peer->falso_positivo++;
+                peer->heartbeat.t = clock();
+            } else {
+                peer->reconstruir(Peer::PREV);
+            }
         }
 
         // Envia heartbeat para o vizinho a cada HB_INTERVAL segundos
@@ -862,6 +856,7 @@ void Peer::reconstruir(Direcao d) {
     msg->setAddr(this->ip);
     msg->setPort(this->porta);
     msg->setType(Message::MSG_DIED);
+
     switch (d) {
         case Peer::PREV:
             msg->setText("ENTER \"" + this->prev.ip + "\" " + this->prev.porta + "\n");
@@ -904,6 +899,7 @@ void Peer::reconstruir(Direcao d) {
         close(this->next.sockfd);
     } catch(...) {
         // O peer parou durante a reconstrução do anel
+        this->falha_detectadas++;
         this->reconstruir(Peer::NEXT);
     }
 
@@ -926,6 +922,7 @@ void Peer::sendHearbeat() {
         close(this->next.sockfd);
     } catch(...) {
         // Falha detectada. Encontrar o próximo peer e reconstruir o anel
+        this->falha_detectadas++;
         this->reconstruir(Peer::NEXT);
     }
 
@@ -1020,13 +1017,8 @@ Vizinho Peer::findPrev(unsigned int p_id) {
 */
 bool Peer::estaVivo(const Vizinho peer) {
     Message *msg = this->msgFct.newMessage();
-    Requisicao *req = new Requisicao;
     int connfd;
     bool ret;
-
-    req->done = false;
-    req->msg = msg;
-    this->reqs[msg->getId()] = req;
 
     msg->setAddr(this->ip);
     msg->setPort(this->porta);
@@ -1037,27 +1029,12 @@ bool Peer::estaVivo(const Vizinho peer) {
         connfd = this->pconnect(peer.ip, peer.porta);
         this->psend(connfd, msg);
         close(connfd);
-
-        // Espera TIMEOUT segundos ou até receber a resposta
-        req->t = clock();
-        float t = ((float) (clock() - req->t)) / CLOCKS_PER_SEC;
-        while (t < TIMEOUT && !req->done) {
-            t = ((float) (clock() - req->t)) / CLOCKS_PER_SEC;
-        }
-
-        if (!req->done) {
-            ret = false;
-        } else {
-            ret = true;
-        }
+        ret = true;
     } catch (...) {
         ret = false;
     }
-    // Exclui a requisição
-    this->reqs.erase(msg->getId());
-    delete req;
-    delete msg;
 
+    delete msg;
     return ret;
 }
 
@@ -1188,18 +1165,27 @@ void Peer::parse(string cmd) {
             break;
         // Comando para exibir informações sobre o peer
         case Comando::CMD_INFO:
+            cout << "<Peer>" << endl;
             cout << "ID: " << this->id << endl;
             cout << "IP: " << this->ip << endl;
             cout << "Porta: " << this->porta << endl;
+            cout << "Taxa de perda de mensagens: " << this->taxa_erro  << "%" << endl;
             cout << endl;
-            cout << "Vizinhos: " << endl;
-            cout << "Anterior - " << this->prev.ip << ":" << this->prev.porta  << " (" << this->prev.id << ")" << endl;
-            cout << "Próximo - " << this->next.ip << ":" << this->next.porta  << " (" << this->next.id << ")" << endl;
+            cout << "<Vizinhos>" << endl;
+            cout << "Anterior: " << this->prev.ip << ":" << this->prev.porta  << " (" << this->prev.id << ")" << endl;
+            cout << "Próximo: " << this->next.ip << ":" << this->next.porta  << " (" << this->next.id << ")" << endl;
             cout << endl;
-            cout << "Heartbeat:" << endl;
+            cout << "<Heartbeat>" << endl;
             cout << "Seq " << this->heartbeat.seq << " de ";
             cout << this->heartbeat.peer.ip << ":" << this->heartbeat.peer.porta  << " (" << this->heartbeat.peer.id << ")";
             cout << " recebido a " << ((float) (clock() - this->heartbeat.t)) / CLOCKS_PER_SEC << " segundos." << endl;
+            cout << "Falhas detectadas: " << this->falha_detectadas << endl;
+            cout << "Falso positivos: " << this->falso_positivo << endl;
+            if (this->falha_detectadas > 0) {
+                cout << "Taxa de erro: " << setprecision(2) << fixed << ((float) this->falso_positivo / (this->falha_detectadas)) * 100 << "%" << endl;
+            } else {
+                cout << "Taxa de erro: 0%" << endl;
+            }
             break;
         // Comando para encerrar a aplicação. QUIT
         case Comando::CMD_QUIT:
