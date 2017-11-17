@@ -774,7 +774,7 @@ void* Peer::processa(void *con) {
     msg = p->receive(conexao->connfd);
 
     // Simula perda de mensagens
-    if ((rand() % 100) > p->taxa_erro) {
+    if ((rand() % 100) > p->taxa_erro || msg->getType() != Message::MSG_HEARTB) {
         while (tentativas < MAX_TRY && !processada) {
             try {
                 p->processa(msg);
