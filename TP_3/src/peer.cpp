@@ -706,52 +706,80 @@ void Peer::processa(Message *msg) {
             unsigned int memberId, msgPId = Peer::hash(msg->getAddr() + ":" + msg->getPort());
             EnterCmd *enter;
             list<Comando*> enterCmds = this->parser.parseEnters(msg->getText());
+            bool removido = false;
 
             for (list<Comando*>::iterator it = enterCmds.begin(); it != enterCmds.end(); ++it) {
                 enter = (EnterCmd*) *it;
                 memberId = Peer::hash(enter->ip + ":" + enter->porta);
-                // Exclui os membros que pararam da lista
-                this->membros.erase(memberId);
+
+                // Alguém detectou o peer atual como parado
+                if (this->id == memberId) {
+                    removido = true;
+                } else {
+                    if (memberId == this->next.id) {
+                        this->next = this->findNext(this->next.id);
+                    }
+                    // Exclui os membros que pararam da lista
+                    this->membros.erase(memberId);
+                }
+
                 delete enter;
             }
 
-            // Se a mensagem for do peer atual, é sinal que a mensagem deu a volta no
-            // anel e sua propagração deve ser interrompida
-            if (this->id != msgPId) {
-                this->pconnect(this->next);
-                this->psend(this->next.sockfd, msg);
-                close(this->next.sockfd);
-            }
-
-            // Replico tudo que é meu para garantir que ainda existem réplicas aṕos a falha
-            string repl = "";
-            bool zero_entre = (this->prev.id > this->id);
-
-            for (map<unsigned int, string>::iterator it = this->tuplas.begin(); it != this->tuplas.end(); ++it) {
-                // Verifica se a tupla pertence ao peer
-                if ((it->first > this->prev.id && it->first <= this->id) // Caso usual
-                    || (this->next.id == this->id) // Rede com somente um peer
-                    || (zero_entre && ((it->first > this->prev.id && it->first > this->id)
-                    || it->first <= this->id))) {
-                    // Chave é responsabilidade do peer atual. Replica
-                    repl += "STORE(<" + SSTR(it->first) + ",\"" + it->second + "\">)\n";
+            if (!removido) {
+                // Se a mensagem for do peer atual, é sinal que a mensagem deu a volta no
+                // anel e sua propagração deve ser interrompida
+                if (this->id != msgPId) {
+                    this->pconnect(this->next);
+                    this->psend(this->next.sockfd, msg);
+                    close(this->next.sockfd);
                 }
-            }
 
-            // Pede para os vizihos replicarem as chaves
-            if (repl.length() > 0) {
-                Message *repassa = this->msgFct.newMessage();
-                repassa->setAddr(this->ip);
-                repassa->setPort(this->porta);
-                repassa->setType(Message::MSG_REPL);
-                repassa->setText(repl);
-                repassa->setToId(MAX_REPL);
+                // Replico tudo que é meu para garantir que ainda existem réplicas aṕos a falha
+                string repl = "";
+                bool zero_entre = (this->prev.id > this->id);
 
-                // Envia requisições de REPLICAÇÃO para o próximo
-                this->pconnect(this->next);
-                this->psend(this->next.sockfd, repassa);
-                close(this->next.sockfd);
-                delete repassa;
+                for (map<unsigned int, string>::iterator it = this->tuplas.begin(); it != this->tuplas.end(); ++it) {
+                    // Verifica se a tupla pertence ao peer
+                    if ((it->first > this->prev.id && it->first <= this->id) // Caso usual
+                        || (this->next.id == this->id) // Rede com somente um peer
+                        || (zero_entre && ((it->first > this->prev.id && it->first > this->id)
+                        || it->first <= this->id))) {
+                        // Chave é responsabilidade do peer atual. Replica
+                        repl += "STORE(<" + SSTR(it->first) + ",\"" + it->second + "\">)\n";
+                    }
+                }
+
+                // Pede para os vizihos replicarem as chaves
+                if (repl.length() > 0) {
+                    Message *repassa = this->msgFct.newMessage();
+                    repassa->setAddr(this->ip);
+                    repassa->setPort(this->porta);
+                    repassa->setType(Message::MSG_REPL);
+                    repassa->setText(repl);
+                    repassa->setToId(MAX_REPL);
+
+                    // Envia requisições de REPLICAÇÃO para o próximo
+                    this->pconnect(this->next);
+                    this->psend(this->next.sockfd, repassa);
+                    close(this->next.sockfd);
+                    delete repassa;
+                }
+            } else {
+                // Sair da rede...
+                Vizinho peer = {
+                    .ip = this->ip,
+                    .porta = this->porta,
+                    .sockfd = -1,
+                    .id = Peer::hash(this->ip + ":" + this->porta)
+                };
+
+                this->next = peer;
+                this->prev = peer;
+                this->setHeartbeat(peer);
+
+                this->membros.clear();
+                this->membros[peer.id] = peer;
             }
         }
             break;
@@ -831,10 +859,9 @@ void* Peer::deteccao(void *arq) {
             // Verificar se é um falso positivo
             if (peer->estaVivo(peer->getPrev())) {
                 peer->falso_positivo++;
-                peer->heartbeat.t = clock();
-            } else {
-                peer->reconstruir(Peer::PREV);
             }
+
+            peer->reconstruir(Peer::PREV);
         }
 
         // Envia heartbeat para o vizinho a cada HB_INTERVAL segundos
@@ -972,7 +999,9 @@ Vizinho Peer::findNext(unsigned int p_id) {
         }
     }
 
-    this->membros.erase(p_id);
+    if (p_id != this->id) {
+        this->membros.erase(p_id);
+    }
 
     return p_next;
 }
