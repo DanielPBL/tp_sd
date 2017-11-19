@@ -1034,7 +1034,9 @@ Vizinho Peer::findPrev(unsigned int p_id) {
         }
     }
 
-    this->membros.erase(p_id);
+    if (p_id != this->id) {
+        this->membros.erase(p_id);
+    }
 
     return p_prev;
 }
