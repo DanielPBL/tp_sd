@@ -5,19 +5,19 @@ Implementação de um serviço P2P estruturado, com detecção de falhas.
 
 ## Compilação ##
 
-O projeto vai acompanhado de dois arquivos `Makefile` que gera o executável do
-peer (que se encontra na pasta raiz `.`) e dos testes (que se encontra na pasta
- `tests`). Desta forma, para compilar os programas basta executar o comando
-`make` dentro de cada um dos diretórios indicados.
+O projeto vai acompanhado de um arquivo `Makefile` que gera o executável do
+peer (que se encontra na pasta raiz `.`) . Desta forma, para compilar o programa
+basta executar o comando `make` no diretório indicado.
 
 ## Execução ##
 
 Dentro da pasta `build`, execute o comando:
 ```
-peer.out IP PORTA
+peer.out IP PORTA (TAXA_ERRO)
 ```
 * **IP**: IP do peer
 * **PORTA**: porta utilizada para receber conexões
+* **TAXA_ERRO** _**(Opcional)**_: taxa de perda de mensagens (simulada)
 
 ### Comandos disponíveis ###
 
@@ -29,11 +29,3 @@ peer.out IP PORTA
 * **INFO**: exibe informações de controle do peer
 * **HELP**: exibe o texto de ajuda
 * **QUIT**: encerra a aplicação
-
-### Unit Tests ###
-
-Para executar os testes unitários basta acessar o diretório `tests/build` e executar
-o seguinte comando:
-```
-test.out
-```
